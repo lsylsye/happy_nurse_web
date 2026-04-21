@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
+import { cn } from "../components/ui/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, Lock, User, ChevronDown, ChevronLeft, Building2, LayoutGrid } from "lucide-react";
+import { ArrowRight, Lock, User, ChevronLeft, Building2, LayoutGrid } from "lucide-react";
 import logoImg from "../../imports/logo_ic.png";
 import logo2Img from "../../imports/logo_2.png";
-import bgImg from "../../imports/bg.png";
 import { Text } from "../components/ui/text";
 import { Heading } from "../components/ui/heading";
 import { Checkbox } from "../components/ui/checkbox";
@@ -23,17 +24,66 @@ export function Login() {
   const [step, setStep] = useState(1);
   const [hospital, setHospital] = useState("");
   const [ward, setWard] = useState("");
+  const [username, setUsername] = useState("김영희");
 
-  const isStep1Complete = hospital !== "" && ward !== "";
+  // Mock 로그인 — 입력 무시하고 항상 "김영희"로 진입
+  const handleLogin = () => {
+    localStorage.setItem("currentUser", "김영희");
+    navigate("/dashboard");
+  };
 
   return (
     <div className="fixed inset-0 flex w-full bg-white overflow-hidden font-sans">
-      {/* Global Background Layer */}
+      {/* Layer 1: Base — 양 끝 모서리 brand-surface 더 진하게, 중앙 흰색 유지 */}
       <div
-        className="absolute inset-0 z-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${bgImg})` }}
+        className="absolute inset-0 z-0"
+        style={{
+          background: `linear-gradient(135deg,
+            var(--color-brand-surface) 0%,
+            var(--color-brand-surface) 12%,
+            #FFFFFF 35%,
+            #FFFFFF 65%,
+            var(--color-brand-surface) 88%,
+            var(--color-brand-surface) 100%
+          )`
+        }}
       />
-      <div className="absolute inset-0 z-1 bg-white/10 backdrop-blur-[2px]" />
+
+      {/* Layer 2: 중앙 강한 흰색 하이라이트 — 밝은 코어 */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background: `radial-gradient(ellipse 80% 65% at 50% 45%, #FFFFFF, transparent 72%)`,
+          opacity: 0.85,
+        }}
+      />
+
+      {/* Layer 3: 우상단 brand-primary 스포트라이트 — 채도 ↑↑ */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background: `radial-gradient(ellipse 60% 50% at 92% 8%, var(--color-brand-primary), transparent 60%)`,
+          opacity: 0.25,
+        }}
+      />
+
+      {/* Layer 4: 좌하단 sub-primary 스포트라이트 — 채도 ↑↑ */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background: `radial-gradient(ellipse 70% 55% at 8% 95%, var(--color-sub-primary), transparent 60%)`,
+          opacity: 0.20,
+        }}
+      />
+
+      {/* Layer 5: 채도 높은 블롭으로 코너 톤 강화 */}
+      <div className="absolute top-[-20%] left-[-12%] w-[55%] h-[55%] bg-[var(--color-brand-primary)]/22 rounded-full blur-[130px] z-1" />
+      <div className="absolute bottom-[-15%] right-[8%] w-[50%] h-[50%] bg-[var(--color-brand-primary)]/18 rounded-full blur-[150px] z-1" />
+      <div className="absolute top-[30%] right-[-15%] w-[42%] h-[42%] bg-[var(--color-sub-primary)]/16 rounded-full blur-[120px] z-1" />
+      <div className="absolute bottom-[25%] left-[10%] w-[28%] h-[28%] bg-[var(--color-brand-primary)]/12 rounded-full blur-[100px] z-1" />
+
+      {/* Layer 6: 은은한 흰색 베일 — 중앙 하이라이트 유지, 전반 대비는 살림 */}
+      <div className="absolute inset-0 z-2 bg-gradient-to-b from-white/15 via-transparent to-white/10" />
 
       {/* Content Layer */}
       <div className="relative z-10 flex w-full h-full">
@@ -69,7 +119,7 @@ export function Login() {
         {/* Right Panel: Login Form (50%) */}
         <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-8 bg-white relative z-30 md:rounded-l-[60px] shadow-[-20px_0_50px_rgba(0,0,0,0.05)] border-l border-white/20">
           <div className="absolute top-10 right-12 hidden md:block">
-            <img src={logo2Img} alt="해피너스" className="h-4 object-contain opacity-50" />
+            <img src={logo2Img} alt="해피너스" className="h-4 object-contain" />
           </div>
 
           <div className="w-full max-w-[420px] px-4">
@@ -130,9 +180,8 @@ export function Login() {
                   </div>
 
                   <Button
-                    disabled={!isStep1Complete}
                     onClick={() => setStep(2)}
-                    className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all disabled:opacity-30 flex items-center justify-center gap-2 group"
+                    className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2 group"
                   >
                     다음 단계
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -171,6 +220,8 @@ export function Login() {
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
                         <Input
                           placeholder="아이디를 입력하세요"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
                           className="pl-12 h-14 bg-slate-50/50 border-slate-200 focus-visible:border-[var(--color-brand-primary)] focus-visible:ring-[var(--color-brand-primary)]/5 rounded-2xl text-base font-semibold transition-all"
                         />
                       </div>
@@ -194,11 +245,16 @@ export function Login() {
                       <Checkbox id="save-id" className="rounded-md border-slate-300" defaultChecked />
                       <span className="text-sm text-content-tertiary font-semibold group-hover:text-content-primary transition-colors">기록 저장</span>
                     </label>
-                    <button className="text-sm text-content-muted font-bold hover:underline">비밀번호 찾기</button>
+                    <button
+                      onClick={() => navigate("/find-password")}
+                      className="text-sm text-content-muted font-bold hover:underline hover:text-[var(--color-brand-primary)] transition-colors"
+                    >
+                      비밀번호 찾기
+                    </button>
                   </div>
 
                   <Button
-                    onClick={() => navigate("/dashboard")}
+                    onClick={handleLogin}
                     className="w-full h-15 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-lg rounded-2xl shadow-xl shadow-[var(--color-brand-primary)]/20 transition-all flex items-center justify-center gap-2"
                   >
                     로그인 완료

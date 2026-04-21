@@ -20,7 +20,6 @@ import { twMerge } from "tailwind-merge";
 import { format, addDays, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import {
-  NURSES,
   HOURS,
   INITIAL_RECORDS,
   INITIAL_ORDERS,
@@ -58,29 +57,60 @@ const MEDICAL_SUGGESTIONS: Record<string, string[]> = {
   충수염: ["급성 충수염", "Appendicitis"],
 };
 
-function WordWithSuggestion({ 
-  word, 
+function WordWithSuggestion({
+  word,
   onReplace,
   enabled = true,
-}: { 
-  word: string, 
+}: {
+  word: string,
   onReplace: (newWord: string) => void,
   enabled?: boolean
 }) {
-  // Remove trailing punctuation for dictionary check
-  const cleanWord = word.replace(/[.,]$/g, "");
-  const suggestions = MEDICAL_SUGGESTIONS[cleanWord];
+  const [open, setOpen] = useState(false);
+  // 팝오버가 열릴 때 당시의 단어/제안 목록을 "얼려" 두어, 단어가 바뀌어도 같은 팝오버 내용이 유지되게 함
+  const [frozen, setFrozen] = useState<{ cleanWord: string; suggestions: string[] } | null>(null);
 
-  if (!suggestions || !enabled) return <>{word} </>;
+  const cleanWord = word.replace(/[.,]$/g, "");
+  const currentSuggestions = MEDICAL_SUGGESTIONS[cleanWord];
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      if (enabled && currentSuggestions) {
+        setFrozen({ cleanWord, suggestions: currentSuggestions });
+        setOpen(true);
+      }
+    } else {
+      setOpen(false);
+      setFrozen(null);
+    }
+  };
+
+  if (!enabled) return <>{word} </>;
+
+  // 팝오버가 닫혀 있고 현재 단어에 제안도 없으면 평문
+  if (!open && !currentSuggestions) return <>{word} </>;
+
+  // 열려 있는 동안은 frozen, 닫혀 있으면 현재 단어 기준
+  const activeCleanWord = open && frozen ? frozen.cleanWord : cleanWord;
+  const suggestions = open && frozen ? frozen.suggestions : currentSuggestions || [];
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <span className="cursor-pointer border-b-[1.5px] border-dotted border-destructive/60 hover:bg-destructive/10 text-destructive/90 transition-all px-0.5 rounded-sm font-bold mx-0.5">
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="cursor-pointer border-b-[1.5px] border-dotted border-[var(--color-brand-primary)]/40 hover:bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] transition-all px-0.5 rounded-sm font-bold mx-0.5"
+        >
           {word}
         </span>
       </PopoverTrigger>
-      <PopoverContent className="w-48 p-1.5 z-[120] bg-white border border-border-base shadow-xl rounded-lg">
+      <PopoverContent
+        className="w-48 p-1.5 z-[120] bg-white border border-border-base shadow-xl rounded-lg"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        data-quick-edit-popover=""
+      >
         <div className="text-[10px] font-bold text-content-muted uppercase tracking-wider px-2 py-1 border-b border-border-subtle mb-1 flex items-center justify-between">
           <span>수정 제안 (AI)</span>
           <AlertCircle className="size-3" />
@@ -89,7 +119,15 @@ function WordWithSuggestion({
           {suggestions.map((suggestion) => (
             <button
               key={suggestion}
-              onClick={() => onReplace(word.replace(cleanWord, suggestion))}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // 현재 실제 단어의 clean 부분을 제안으로 치환 (cleanWord가 바뀌었을 수 있으므로 activeCleanWord 사용)
+                const target = cleanWord || activeCleanWord;
+                onReplace(word.replace(target, suggestion));
+                // 팝오버는 유지 — 바깥 클릭으로만 닫힘
+              }}
               className="flex items-center justify-between w-full px-2 py-1.5 text-body-sm font-bold text-content-secondary hover:bg-[var(--color-brand-surface)] hover:text-[var(--color-brand-primary)] rounded transition-all text-left group"
             >
               <span>{suggestion}</span>
@@ -255,7 +293,7 @@ function TimePicker({
               e.stopPropagation();
               setOpen(true);
             }}
-            className="bg-transparent border-none outline-none w-full text-center text-body-base font-mono font-bold text-[var(--color-content-primary)] focus:text-[var(--color-brand-primary)] transition-colors cursor-pointer p-0 placeholder:text-[var(--color-content-muted)]"
+            className="bg-transparent border-none outline-none w-full text-center text-[13px] font-mono font-bold text-[var(--color-content-primary)] focus:text-[var(--color-brand-primary)] transition-colors cursor-pointer p-0 placeholder:text-[var(--color-content-muted)]"
             placeholder="00:00"
             maxLength={5}
           />
@@ -330,12 +368,14 @@ function EditableCell({
   multiline = false,
   className = "",
   placeholder = "클릭하여 편집",
+  canEdit = true,
 }: {
   value: string;
   onUpdate: (val: string) => void;
   multiline?: boolean;
   className?: string;
   placeholder?: string;
+  canEdit?: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [val, setVal] = useState(value);
@@ -355,7 +395,7 @@ function EditableCell({
     }
   };
 
-  if (isEditing) {
+  if (isEditing && canEdit) {
     return (
       <div
         className={cn(
@@ -399,10 +439,11 @@ function EditableCell({
   return (
     <div
       className={cn(
-        "w-full cursor-text hover:bg-surface-hover rounded-[2px] px-1 -mx-1 transition-colors min-h-[1.5em] flex items-center group/cell border border-transparent hover:border-border-subtle",
+        "w-full rounded-[2px] px-1 -mx-1 transition-colors min-h-[1.5em] flex items-center group/cell border border-transparent",
+        canEdit ? "cursor-text hover:bg-surface-hover hover:border-border-subtle" : "cursor-default",
         className,
       )}
-      onClick={() => setIsEditing(true)}
+      onClick={() => canEdit && setIsEditing(true)}
     >
       {value ? (
         <span
@@ -419,26 +460,31 @@ function EditableCell({
           {placeholder}
         </span>
       )}
-      <Edit2 className="w-[10px] h-[10px] text-content-muted ml-1 opacity-0 group-hover/cell:opacity-100 shrink-0" />
+      {canEdit && <Edit2 className="w-[10px] h-[10px] text-content-muted ml-1 opacity-0 group-hover/cell:opacity-100 shrink-0" />}
     </div>
   );
 }
 
 export function EMRGrid() {
+  const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
   const [activeTab, setActiveTab] = useState<"nursing" | "order" | "handover">("nursing");
-  const [records, setRecords] = useState(INITIAL_RECORDS);
+  // EMRGrid는 현재 p1(김가민) 단일 환자 화면. patientId가 없거나 "p1"인 기록만 표시.
+  const [records, setRecords] = useState(
+    INITIAL_RECORDS.filter((r) => {
+      const pid = (r as { patientId?: string }).patientId;
+      return !pid || pid === "p1";
+    }),
+  );
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [newRecordText, setNewRecordText] = useState("");
   const [newRecordTime, setNewRecordTime] = useState("");
-  const [newRecordWriter, setNewRecordWriter] = useState(
-    NURSES[0],
-  );
   const [inlineAddIndex, setInlineAddIndex] = useState<
     number | null
   >(null);
   const [selectedTimeHour, setSelectedTimeHour] = useState<
     number | null
   >(null);
+  const [myRecordsOnly, setMyRecordsOnly] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(
     new Date(2026, 3, 13),
   ); // 2026.04.13
@@ -560,7 +606,7 @@ export function EMRGrid() {
       category: "간호기록",
       content: newRecordText.trim(),
       status: "completed",
-      writer: newRecordWriter,
+      writer: currentUser,
       isConfirmed: true,
     };
 
@@ -631,17 +677,18 @@ export function EMRGrid() {
     }
   };
 
+  const recordPasses = (record: typeof INITIAL_RECORDS[0]) => {
+    if (selectedTimeHour !== null) {
+      const hour = parseInt(record.time.split(":")[0], 10);
+      if (hour < selectedTimeHour) return false;
+    }
+    if (myRecordsOnly && record.writer !== currentUser) return false;
+    return true;
+  };
+
   const filteredRecords = isGlobalEditing
-    ? editRecords.filter((record) => {
-        if (selectedTimeHour === null) return true;
-        const hour = parseInt(record.time.split(":")[0], 10);
-        return hour >= selectedTimeHour;
-      })
-    : records.filter((record) => {
-        if (selectedTimeHour === null) return true;
-        const hour = parseInt(record.time.split(":")[0], 10);
-        return hour >= selectedTimeHour;
-      });
+    ? editRecords.filter(recordPasses)
+    : records.filter(recordPasses);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[var(--color-surface-base)]">
@@ -864,13 +911,13 @@ export function EMRGrid() {
           <div className="bg-[var(--color-action-blue-surface)]/40 border-r border-[var(--color-border-base)] px-2.5 py-1 font-bold text-[var(--color-sub-primary)] flex items-center whitespace-nowrap">
             메모
           </div>
-          <div className="px-2.5 py-1 col-span-7 flex items-center min-w-0 bg-[var(--color-action-blue-surface)]/10">
+          <div className="px-2.5 py-1 col-span-7 flex items-center min-w-0 bg-[var(--color-brand-surface)]/40">
             <EditableCell
               value={patientInfo.memo}
               onUpdate={(val) =>
                 handleUpdatePatient("memo", val)
               }
-              className="font-bold text-[var(--color-content-secondary)] truncate w-full"
+              className="font-bold text-[#1D4ED8] truncate w-full"
               placeholder="중요 메모를 입력하세요"
             />
           </div>
@@ -881,28 +928,40 @@ export function EMRGrid() {
       <div className="flex-1 p-1.5 flex flex-col min-h-0">
         {/* Tab Menu - Nursing Record, Doctor Order */}
         <div className="flex items-center gap-1 px-4 mb-1 border-b border-[var(--color-border-base)] bg-white/50">
-          <button 
+          <button
             onClick={() => setActiveTab("nursing")}
             className={cn(
               "px-4 py-2 text-body-base font-bold transition-all border-b-2",
-              activeTab === "nursing" 
-                ? "text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]" 
+              activeTab === "nursing"
+                ? "text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]"
                 : "text-[var(--color-content-muted)] border-transparent hover:text-[var(--color-content-primary)]"
             )}
           >
             간호 기록
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab("order")}
             className={cn(
               "px-4 py-2 text-body-base font-bold transition-all border-b-2",
-              activeTab === "order" 
-                ? "text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]" 
+              activeTab === "order"
+                ? "text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]"
                 : "text-[var(--color-content-muted)] border-transparent hover:text-[var(--color-content-primary)]"
             )}
           >
             의사 오더
           </button>
+
+          {activeTab === "nursing" && (
+            <label className="ml-auto flex items-center gap-2 cursor-pointer select-none text-body-sm font-semibold text-[var(--color-content-tertiary)] hover:text-[var(--color-content-primary)] transition-colors">
+              <input
+                type="checkbox"
+                checked={myRecordsOnly}
+                onChange={(e) => setMyRecordsOnly(e.target.checked)}
+                className="size-3.5 rounded border-[var(--color-border-base)] accent-[var(--color-brand-primary)] cursor-pointer"
+              />
+              내 기록만 보기
+            </label>
+          )}
         </div>
 
         <div className="flex flex-col h-full bg-[var(--color-surface-card)] border border-[var(--color-border-base)] rounded-lg shadow-md overflow-hidden relative">
@@ -929,9 +988,13 @@ export function EMRGrid() {
 
                 {/* Records */}
                 <div className="flex flex-col flex-1 pb-10">
-                  {filteredRecords.map((record, index) => (
-                    <React.Fragment key={record.id}>
-                      {/* Plus button between rows */}
+                  {filteredRecords.map((record, index) => {
+                    const isMine = record.writer === currentUser;
+                    const isEditingRow = (isGlobalEditing || editingRecordId === record.id) && isMine;
+
+                    return (
+                      <React.Fragment key={record.id}>
+                        {/* Plus button between rows */}
                       <div className="relative group/between h-0 z-30">
                         <div
                           className="absolute inset-x-0 -top-2 h-4 flex items-center justify-center opacity-0 group-hover/between:opacity-100 transition-opacity cursor-pointer overflow-visible"
@@ -948,51 +1011,44 @@ export function EMRGrid() {
 
                       {inlineAddIndex === index && (
                         <div className="grid grid-cols-[80px_1fr_110px_120px] gap-4 px-4 py-2 border-y border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-surface)]/30 items-center shadow-inner">
+                          {/* Time Column */}
                           <div className="flex justify-center border-r border-brand-primary/10 pr-4">
                             <TimePicker
                               value={newRecordTime}
                               onSelect={setNewRecordTime}
-                              className="h-8 w-[72px]"
+                              className="h-8 w-full bg-white border-brand-primary/10 shadow-xs"
                             />
                           </div>
-                          <div className="flex-1">
-                            <Input
+                          
+                          {/* Content Column */}
+                          <div className="pr-4 border-r border-brand-primary/10">
+                            <textarea
                               autoFocus
+                              placeholder="새로운 간호 기록을 입력하세요..."
                               value={newRecordText}
                               onChange={(e) =>
-                                setNewRecordText(e.target.value)
+                                setNewRecordText(
+                                  e.target.value,
+                                )
                               }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter")
-                                  handleAddRecord();
-                                if (e.key === "Escape")
-                                  setInlineAddIndex(null);
-                              }}
-                              placeholder="새로운 간호 기록 내용을 입력하세요..."
-                              className="h-8 bg-white border-brand-primary/10 focus-visible:ring-brand-primary/20"
+                              className="w-full bg-white border border-brand-primary/10 rounded px-2 py-1.5 text-body-sm min-h-[40px] focus:outline-none focus:ring-1 focus:ring-brand-primary/20 transition-all resize-none shadow-xs"
+                              rows={1}
                             />
                           </div>
-                          <div className="min-w-0">
-                            <SearchableSelect
-                              value={newRecordWriter}
-                              onSelect={setNewRecordWriter}
-                              options={NURSES}
-                              width="160px"
-                              trigger={
-                                <div className="flex items-center justify-between w-full h-8 px-2 rounded bg-white border border-brand-primary/10 text-body-xs font-bold hover:border-brand-primary/20 transition-colors">
-                                  <span className="truncate">
-                                    {newRecordWriter}
-                                  </span>
-                                  <ChevronDown className="size-3 text-content-muted" />
-                                </div>
-                              }
-                            />
+
+                          {/* Writer Column - Perfectly Aligned */}
+                          <div className="text-body-sm text-[var(--color-content-tertiary)] font-bold truncate h-full border-r border-brand-primary/10 pr-4 flex items-center justify-center">
+                            <div className="flex items-center justify-center w-full gap-1 px-1.5 py-1">
+                              <span className="truncate">{currentUser}</span>
+                            </div>
                           </div>
-                          <div className="flex gap-1.5 justify-end">
+
+                          {/* Actions Column */}
+                          <div className="flex gap-1.5 justify-center">
                             <button
                               onClick={handleAddRecord}
                               disabled={!newRecordText.trim()}
-                              className="px-3 py-1 bg-[var(--color-brand-primary)] text-white text-[10px] font-bold rounded shadow-sm hover:bg-[var(--color-brand-hover)] disabled:opacity-50 transition-colors"
+                              className="px-3 py-1.5 bg-[var(--color-brand-primary)] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[var(--color-brand-hover)] disabled:opacity-50 transition-colors whitespace-nowrap"
                             >
                               추가
                             </button>
@@ -1000,7 +1056,7 @@ export function EMRGrid() {
                               onClick={() =>
                                 setInlineAddIndex(null)
                               }
-                              className="px-3 py-1 bg-white border border-border-base text-[10px] font-bold rounded shadow-sm hover:bg-surface-hover transition-colors"
+                              className="px-3 py-1.5 bg-white border border-border-base text-[11px] font-bold rounded shadow-sm hover:bg-surface-hover transition-colors whitespace-nowrap"
                             >
                               취소
                             </button>
@@ -1014,25 +1070,26 @@ export function EMRGrid() {
                         }
                         className={cn(
                           "grid grid-cols-[80px_1fr_110px_120px] gap-4 px-4 py-1 border-b border-[var(--color-border-base)]/50 items-start hover:bg-[var(--color-surface-hover)]/40 transition-all group relative",
-                          (isGlobalEditing ||
-                            editingRecordId === record.id) &&
+                          isEditingRow &&
                             "bg-[var(--color-brand-surface)]/20 hover:bg-[var(--color-brand-surface)]/20 shadow-inner",
                           !record.isConfirmed &&
                             "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-[var(--color-content-tertiary)]",
                         )}
-                        onClick={() => {
+                        onClick={(e) => {
+                          // 퀵 수정 팝오버 내부에서 발생한 클릭은 편집 모드 전환 차단
+                          if ((e.target as HTMLElement).closest("[data-quick-edit-popover]")) return;
                           if (
                             !record.isConfirmed &&
-                            !isGlobalEditing
+                            !isGlobalEditing &&
+                            record.writer === currentUser
                           ) {
                             setEditingRecordId(record.id);
                           }
                         }}
                       >
-                        {/* Time Column */}
-                        <div className="pt-1 h-full border-r border-[var(--color-border-base)]/50 pr-4">
-                          {isGlobalEditing ||
-                          editingRecordId === record.id ? (
+                        {/* Content Column */}
+                        <div className="pt-0.5 border-r border-[var(--color-border-base)]/50 pr-4 min-w-0">
+                          {isEditingRow ? (
                             <TimePicker
                               value={record.time}
                               onSelect={(newTime) => {
@@ -1057,37 +1114,38 @@ export function EMRGrid() {
 
                         {/* Content Column */}
                         <div className="min-w-0 pr-6 border-r border-[var(--color-border-base)]/50 py-1.5 relative group/content">
-                          {/* Handover Toggle Checkmark */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const targetId = record.id;
-                              const currentVal = isGlobalEditing 
-                                ? editRecords.find(r => r.id === targetId)?.isHandover 
-                                : record.isHandover;
-                              
-                              if (isGlobalEditing) {
-                                handleUpdateEditRecord(targetId, { isHandover: !currentVal });
-                              } else {
-                                handleUpdateRecord(targetId, { isHandover: !currentVal });
-                              }
-                            }}
-                            className={cn(
-                              "absolute top-1 right-1 p-0.5 rounded transition-all z-30 cursor-pointer",
-                              (isGlobalEditing ? editRecords.find(r => r.id === record.id)?.isHandover : record.isHandover)
-                                ? "text-green-600 bg-green-50/80 opacity-100"
-                                : "text-content-muted/30 hover:text-content-muted/60 hover:bg-surface-hover opacity-0 group-hover/content:opacity-100"
-                            )}
-                            title="인수인계 항목 선택"
-                          >
-                            <Check className={cn(
-                              "size-3.5 stroke-[3px]",
-                              (isGlobalEditing ? editRecords.find(r => r.id === record.id)?.isHandover : record.isHandover) && "animate-in zoom-in-75 duration-200"
-                            )} />
-                          </button>
+                          {/* Handover Toggle Checkmark — 본인 기록만 토글 가능 */}
+                          {isMine && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const targetId = record.id;
+                                const currentVal = isGlobalEditing
+                                  ? editRecords.find(r => r.id === targetId)?.isHandover
+                                  : record.isHandover;
+
+                                if (isGlobalEditing) {
+                                  handleUpdateEditRecord(targetId, { isHandover: !currentVal });
+                                } else {
+                                  handleUpdateRecord(targetId, { isHandover: !currentVal });
+                                }
+                              }}
+                              className={cn(
+                                "absolute top-1 right-1 p-0.5 rounded transition-all z-30 cursor-pointer",
+                                (isGlobalEditing ? editRecords.find(r => r.id === record.id)?.isHandover : record.isHandover)
+                                  ? "text-green-600 bg-green-50/80 opacity-100"
+                                  : "text-content-muted/30 hover:text-content-muted/60 hover:bg-surface-hover opacity-0 group-hover/content:opacity-100"
+                              )}
+                              title="인수인계 항목 선택"
+                            >
+                              <Check className={cn(
+                                "size-3.5 stroke-[3px]",
+                                (isGlobalEditing ? editRecords.find(r => r.id === record.id)?.isHandover : record.isHandover) && "animate-in zoom-in-75 duration-200"
+                              )} />
+                            </button>
+                          )}
                           
-                          {isGlobalEditing ||
-                          editingRecordId === record.id ? (
+                          {isEditingRow ? (
                             <div className="relative px-1.5 py-1 bg-surface-base/30 rounded focus-within:bg-white focus-within:ring-1 focus-within:ring-brand-primary/20 transition-all">
                               <textarea
                                 autoFocus={
@@ -1120,6 +1178,14 @@ export function EMRGrid() {
                                   e.target.style.height = "auto";
                                   e.target.style.height = `${e.target.scrollHeight}px`;
                                 }}
+                                onBlur={(e) => {
+                                  // 전체 수정 모드에서는 유지, 인라인 편집만 외부 클릭 시 종료
+                                  if (isGlobalEditing) return;
+                                  if (editingRecordId !== record.id) return;
+                                  const rowEl = recordRefs.current[record.id];
+                                  if (rowEl && rowEl.contains(e.relatedTarget as Node)) return;
+                                  setEditingRecordId(null);
+                                }}
                                 className="w-full bg-transparent text-body-sm leading-[1.6] text-content-primary resize-none outline-none overflow-hidden block p-0 m-0 min-h-[1.6em]"
                                 rows={1}
                               />
@@ -1129,87 +1195,52 @@ export function EMRGrid() {
                               {record.content
                                 .split(" ")
                                 .map((word, wordIdx) => (
-                                  <span 
-                                    key={wordIdx} 
-                                    onClick={(e) => !record.isConfirmed && e.stopPropagation()}
-                                  >
-                                    <WordWithSuggestion 
-                                      word={word} 
-                                      enabled={!record.isConfirmed}
+                                  <React.Fragment key={wordIdx}>
+                                    <WordWithSuggestion
+                                      word={word}
+                                      enabled={!record.isConfirmed && isMine}
                                       onReplace={(newWord) => {
                                         const words = record.content.split(" ");
                                         words[wordIdx] = newWord;
                                         handleUpdateRecord(record.id, { content: words.join(" ") });
                                       }}
                                     />
-                                  </span>                                ))}
+                                  </React.Fragment>
+                                ))}
                             </div>
                           )}                        </div>
 
-                        {/* Writer Column */}
+                        {/* Writer Column — 로그인 사용자 기준 자동 기입, 수정 불가 */}
                         <div className="text-body-sm text-[var(--color-content-tertiary)] font-bold pt-1.5 truncate h-full border-r border-[var(--color-border-base)]/50 pr-4 flex items-center justify-center">
-                          {isGlobalEditing ||
-                          editingRecordId === record.id ? (
-                            <SearchableSelect
-                              value={
-                                isGlobalEditing
-                                  ? editRecords.find(
-                                      (r) => r.id === record.id,
-                                    )?.writer || ""
-                                  : record.writer
-                              }
-                              onSelect={(val) => {
-                                if (isGlobalEditing)
-                                  handleUpdateEditRecord(
-                                    record.id,
-                                    { writer: val },
-                                  );
-                                else
-                                  handleUpdateRecord(record.id, {
-                                    writer: val,
-                                  });
-                              }}
-                              options={NURSES}
-                              trigger={
-                                <div className="flex items-center justify-between w-full gap-1 px-1.5 py-1 rounded bg-surface-base/50 border border-transparent hover:bg-white hover:border-border-subtle transition-all cursor-pointer">
-                                  <span className="truncate text-[var(--color-content-primary)]">
-                                    {isGlobalEditing
-                                      ? editRecords.find(
-                                          (r) =>
-                                            r.id === record.id,
-                                        )?.writer
-                                      : record.writer}
-                                  </span>
-                                  <ChevronDown className="w-3.5 h-3.5 text-content-muted shrink-0" />
-                                </div>
-                              }
-                              width="160px"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center w-full gap-1 px-1.5 py-1">
-                              <span className="truncate">
-                                {record.writer}
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-center justify-center w-full gap-1 px-1.5 py-1">
+                            <span className="truncate">
+                              {record.writer}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Actions Column */}
                         <div className="pt-1 h-full flex items-center justify-center gap-1.5">
                           {!record.isConfirmed && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleConfirmRecord(record.id);
-                                if (editingRecordId === record.id)
-                                  setEditingRecordId(null);
-                              }}
-                              className="px-4 py-1.5 text-body-sm font-bold text-[var(--color-content-secondary)] bg-white border border-[var(--color-border-base)] rounded-md hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-content-primary)] transition-all whitespace-nowrap shadow-sm active:scale-95"
-                            >
-                              확정
-                            </button>
+                            isMine ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleConfirmRecord(record.id);
+                                  if (editingRecordId === record.id)
+                                    setEditingRecordId(null);
+                                }}
+                                className="px-4 py-1.5 text-body-sm font-bold text-[var(--color-content-primary)] bg-white border border-[var(--color-border-base)] rounded-md hover:bg-[var(--color-surface-hover)] hover:border-[var(--color-border-hover)] transition-all whitespace-nowrap shadow-sm active:scale-95"
+                              >
+                                확정
+                              </button>
+                            ) : (
+                              <div className="px-3 py-1.5 text-[11px] font-bold text-content-muted bg-slate-100 border border-border-subtle rounded-md whitespace-nowrap opacity-70 cursor-not-allowed">
+                                확정 대기
+                              </div>
+                            )
                           )}
-                          {isGlobalEditing && (
+                          {isGlobalEditing && record.writer === currentUser && (
                             <button
                               onClick={() =>
                                 handleDeleteRecord(record.id)
@@ -1223,7 +1254,8 @@ export function EMRGrid() {
                         </div>
                       </div>
                     </React.Fragment>
-                  ))}
+                  );
+                })}
 
                   <div className="relative group/between h-0 z-30">
                     <div
@@ -1247,53 +1279,39 @@ export function EMRGrid() {
                         <TimePicker
                           value={newRecordTime}
                           onSelect={setNewRecordTime}
-                          className="h-8 w-[72px]"
+                          className="h-8 w-full bg-white border-brand-primary/10 shadow-xs"
                         />
                       </div>
-                      <div className="flex-1">
-                        <Input
+                      <div className="pr-4 border-r border-brand-primary/10">
+                        <textarea
                           autoFocus
+                          placeholder="새로운 기록을 입력하세요..."
                           value={newRecordText}
                           onChange={(e) =>
-                            setNewRecordText(e.target.value)
+                            setNewRecordText(
+                              e.target.value,
+                            )
                           }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter")
-                              handleAddRecord();
-                            if (e.key === "Escape")
-                              setInlineAddIndex(null);
-                          }}
-                          placeholder="새로운 간호 기록 내용을 입력하세요..."
-                          className="h-8 bg-white border-brand-primary/10 focus-visible:ring-brand-primary/20"
+                          className="w-full bg-white border border-brand-primary/10 rounded px-2 py-1.5 text-body-sm min-h-[40px] focus:outline-none focus:ring-1 focus:ring-brand-primary/20 transition-all resize-none shadow-xs"
+                          rows={1}
                         />
                       </div>
-                      <div className="min-w-0">
-                        <SearchableSelect
-                          value={newRecordWriter}
-                          onSelect={setNewRecordWriter}
-                          options={NURSES}
-                          width="160px"
-                          trigger={
-                            <div className="flex items-center justify-between w-full h-8 px-2 rounded bg-white border border-brand-primary/10 text-body-xs font-bold hover:border-brand-primary/20 transition-colors">
-                              <span className="truncate">
-                                {newRecordWriter}
-                              </span>
-                              <ChevronDown className="size-3 text-content-muted" />
-                            </div>
-                          }
-                        />
+                      <div className="text-body-sm text-[var(--color-content-tertiary)] font-bold truncate h-full border-r border-brand-primary/10 pr-4 flex items-center justify-center">
+                        <div className="flex items-center justify-center w-full gap-1 px-1.5 py-1">
+                          <span className="truncate">{currentUser}</span>
+                        </div>
                       </div>
-                      <div className="flex gap-1.5 justify-end">
+                      <div className="flex gap-1.5 justify-center">
                         <button
                           onClick={handleAddRecord}
                           disabled={!newRecordText.trim()}
-                          className="px-3 py-1 bg-[var(--color-brand-primary)] text-white text-[10px] font-bold rounded shadow-sm hover:bg-[var(--color-brand-hover)] disabled:opacity-50 transition-colors"
+                          className="px-3 py-1.5 bg-[var(--color-brand-primary)] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[var(--color-brand-hover)] disabled:opacity-50 transition-colors whitespace-nowrap"
                         >
                           추가
                         </button>
                         <button
                           onClick={() => setInlineAddIndex(null)}
-                          className="px-3 py-1 bg-white border border-border-base text-[10px] font-bold rounded shadow-sm hover:bg-surface-hover transition-colors"
+                          className="px-3 py-1.5 bg-white border border-border-base text-[11px] font-bold rounded shadow-sm hover:bg-surface-hover transition-colors whitespace-nowrap"
                         >
                           취소
                         </button>

@@ -16,8 +16,8 @@ export function RightPanel() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
-      {/* Tab Switcher Header */}
-      <div className="px-3 py-3 border-b border-border-base bg-[var(--color-surface-base)]/90 backdrop-blur-md">
+      {/* Tab Switcher Header - Removed border-b and reduced padding */}
+      <div className="px-3 pt-3 pb-1 bg-[var(--color-surface-base)]/90 backdrop-blur-md">
         <div className="flex p-1 bg-[var(--color-surface-hover)] rounded-lg">
           <button
             onClick={() => setActiveTab('orders')}

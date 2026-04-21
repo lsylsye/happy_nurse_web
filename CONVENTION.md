@@ -15,7 +15,7 @@
 - **고정폭 폰트(Monospace):** 숫자 데이터나 코드, ID 등 세로 열 정렬이 필요한 곳에는 반드시 `font-mono`를 함께 적용합니다.
 
 ## 3. 컬러 시스템 (Color System)
-- **하드코딩 금지:** `bg-[#FF0072]`나 `text-[#34286E]`와 같이 임의의 헥스 코드를 하드코딩하지 않습니다.
+- **하드코딩 금지:** `bg-[#15289F]`나 `text-[#34286E]`와 같이 임의의 헥스 코드를 하드코딩하지 않습니다.
 - **Design Tokens 사용:** 반드시 `/src/styles/theme.css`에 정의된 CSS 변수(Variables)를 사용합니다.
   - 메인 컬러: `var(--color-brand-primary)`
   - 서브 컬러 (네이비): `var(--color-sub-primary)`

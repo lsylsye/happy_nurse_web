@@ -89,13 +89,13 @@ export function DashboardLayout({
       {/* Floating Action Button (FAB) */}
       <div className="absolute bottom-8 right-8 z-[100]">
         <Popover open={isOpen} onOpenChange={setIsOpen}>
-          <PopoverTrigger className="bg-[#fcc5de]" asChild>
+          <PopoverTrigger asChild>
             <button
-              className="group flex h-14 w-14 items-center justify-center rounded-full bg-[#FF0072] text-white transition-all hover:scale-105 hover:bg-[#E60067] active:scale-95 outline-none shadow-lg"
+              className="group flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-white transition-all hover:scale-110 hover:shadow-[0_8px_30px_rgb(21,40,159,0.3)] active:scale-90 outline-none shadow-2xl"
               aria-label="Quick Actions"
             >
               <Plus
-                className={`h-7 w-7 transition-transform duration-300 ${isOpen ? "rotate-45" : "rotate-0"}`}
+                className={`h-8 w-8 transition-transform duration-300 ${isOpen ? "rotate-45" : "rotate-0"}`}
               />
             </button>
           </PopoverTrigger>

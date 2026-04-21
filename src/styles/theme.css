@@ -16,7 +16,7 @@
   --muted-foreground: #717182;
   --accent: #e9ebef;
   --accent-foreground: #030213;
-  --destructive: #d4183d;
+  --destructive: #C00000;
   --destructive-foreground: #ffffff;
   --border: rgba(0, 0, 0, 0.1);
   --input: transparent;
@@ -25,11 +25,11 @@
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --chart-1: #15289F;
+  --chart-2: #3060FF;
+  --chart-3: #1E293B;
+  --chart-4: #60A5FA;
+  --chart-5: #94A3B8;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -56,8 +56,8 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --destructive: #EF4444;
+  --destructive-foreground: #ffffff;
   --border: oklch(0.269 0 0);
   --input: oklch(0.269 0 0);
   --ring: oklch(0.439 0 0);
@@ -84,9 +84,9 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Emr Brand Colors */
-  --color-brand-primary: #FF0072;
-  --color-brand-hover: #E60066;
-  --color-brand-surface: #FFF0F5;
+  --color-brand-primary: #15289F;
+  --color-brand-hover: #101E7A;
+  --color-brand-surface: #E7E9F5;
   --color-brand-text: #FFFFFF;
 
   /* Emr Sub Colors (Navy) */

@@ -3,6 +3,7 @@ import {
   Clock,
   Search,
   ClipboardList,
+  RefreshCcw,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { clsx, type ClassValue } from "clsx";
@@ -13,7 +14,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Data Types matched with Main EMR Table
+// Data Types
 interface DoctorOrder {
   id: string;
   category: "수액" | "지시" | "투약" | "LIS" | "영상";
@@ -27,10 +28,26 @@ interface DoctorOrder {
   time: string;
   remarks: string;
   patientName: string;
+  isChanged?: boolean;
 }
 
-// Mock Orders matched with Main Table Data
+// Mock Orders
 const INITIAL_ORDERS: DoctorOrder[] = [
+  {
+    id: "o-new",
+    category: "투약",
+    code: "APAP 1000",
+    name: "Acetaminophen 1000mg",
+    dose: "1",
+    frequency: "2",
+    unit: "tab",
+    method: "PO",
+    status: "active",
+    time: "15:30",
+    remarks: "기존 500mg QD에서 1000mg BID로 변경됨 (통증 조절 목적)",
+    patientName: "박민수",
+    isChanged: true,
+  },
   {
     id: "o1",
     category: "수액",
@@ -95,7 +112,7 @@ export function STTPanel() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
+    let result = orders.filter((order) => {
       const isOngoing = order.status === "active" || order.status === "pending";
       const matchesTab = activeTab === "ongoing" ? isOngoing : order.status === "completed";
       const matchesSearch =
@@ -105,6 +122,8 @@ export function STTPanel() {
         order.patientName.includes(searchQuery);
       return matchesTab && matchesSearch;
     });
+
+    return [...result].sort((a, b) => (b.isChanged ? 1 : 0) - (a.isChanged ? 1 : 0));
   }, [orders, activeTab, searchQuery]);
 
   const handleCompleteOrder = (id: string) => {
@@ -117,146 +136,124 @@ export function STTPanel() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border-base bg-[var(--color-surface-base)]/90 backdrop-blur-md sticky top-0 z-30 flex flex-col gap-3">
-        {/* Tab Switcher */}
-        <div className="flex p-1 bg-[var(--color-surface-hover)] rounded-lg">
+      {/* 2-Row Compact Header */}
+      <div className="bg-white/95 backdrop-blur-md sticky top-0 z-30 flex flex-col gap-2 p-3 border-b border-border-base">
+        <div className="flex bg-[var(--color-surface-hover)] p-1.5 rounded-lg border border-border-subtle shrink-0">
           <button
             onClick={() => setActiveTab("ongoing")}
             className={cn(
-              "flex-1 py-1.5 text-body-sm font-bold rounded-md transition-all",
-              activeTab === "ongoing"
-                ? "bg-white text-[var(--color-brand-primary)] shadow-sm"
-                : "text-content-muted hover:text-content-secondary",
+              "flex-1 py-2 text-[14px] font-black rounded-md transition-all flex items-center justify-center gap-2.5",
+              activeTab === "ongoing" ? "bg-white text-[var(--color-brand-primary)] shadow-md" : "text-content-muted hover:text-content-secondary"
             )}
           >
-            진행중
-            <span className="ml-1.5 text-[15px] opacity-80 font-mono">
+            <span>진행중</span>
+            <span className="opacity-70 font-mono text-body-sm bg-[var(--color-surface-base)] px-2.5 py-0.5 rounded-full border border-border-subtle shadow-inner">
               {orders.filter((o) => o.status !== "completed").length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("completed")}
             className={cn(
-              "flex-1 py-1.5 text-body-sm font-bold rounded-md transition-all",
-              activeTab === "completed"
-                ? "bg-white text-[var(--color-brand-primary)] shadow-sm"
-                : "text-content-muted hover:text-content-secondary",
+              "flex-1 py-2 text-[14px] font-black rounded-md transition-all flex items-center justify-center gap-2.5",
+              activeTab === "completed" ? "bg-white text-[var(--color-brand-primary)] shadow-md" : "text-content-muted hover:text-content-secondary"
             )}
           >
-            완료
-            <span className="ml-1.5 text-[15px] opacity-80 font-mono">
+            <span>완료</span>
+            <span className="opacity-70 font-mono text-body-sm bg-[var(--color-surface-base)] px-2.5 py-0.5 rounded-full border border-border-subtle shadow-inner">
               {orders.filter((o) => o.status === "completed").length}
             </span>
           </button>
         </div>
-      </div>
 
-      {/* Search Section */}
-      <div className="px-3 py-2 bg-[var(--color-surface-base)]/80 backdrop-blur-sm border-b border-border-subtle">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-muted z-10" />
+        <div className="relative group px-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted group-focus-within:text-[var(--color-brand-primary)] transition-colors z-10" />
           <Input
             type="text"
-            placeholder="처방명, 코드, 환자명 검색..."
-            className="pl-8 bg-[var(--color-surface-card)] border-[var(--color-border-subtle)] shadow-sm h-8 text-body-sm focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)] focus-visible:border-[var(--color-brand-primary)] transition-all"
+            placeholder="오더 검색..."
+            className="pl-9 bg-[var(--color-surface-base)] border-border-base h-10 text-[13px] focus-visible:ring-1 focus-visible:ring-[var(--color-brand-primary)] rounded-md"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Order List */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2.5">
+      {/* Modern Card List */}
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2.5">
         {filteredOrders.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-content-muted gap-3 py-10">
-            <ClipboardList className="w-8 h-8 opacity-20" />
-            <p className="text-body-base font-medium">검색된 오더가 없습니다.</p>
+          <div className="h-full flex flex-col items-center justify-center text-content-muted gap-2 py-20 opacity-30">
+            <ClipboardList className="w-10 h-10" />
+            <p className="text-[14px] font-bold">오더 없음</p>
           </div>
         ) : (
           filteredOrders.map((order) => (
             <div
               key={order.id}
               className={cn(
-                "group bg-surface-card rounded-xl border border-border-base flex flex-col overflow-hidden transition-all hover:border-[var(--color-brand-primary)]/30 hover:shadow-md",
-                order.status === "completed" && "bg-slate-50/50 opacity-80"
+                "relative bg-white rounded-xl border border-border-base shadow-sm flex flex-col shrink-0 transition-all hover:border-[var(--color-brand-primary)]/30",
+                order.isChanged && "border-l-4 border-l-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/20 bg-[var(--color-brand-surface)]/20",
+                order.status === "completed" && "opacity-70 bg-slate-50/50"
               )}
             >
-              {/* Card Header: Patient & Action Button */}
-              <div className="flex items-center justify-between px-3 py-2.5 bg-[var(--color-surface-hover)] border-b border-border-subtle/50">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="text-[15px] font-bold text-content-primary tracking-tight truncate shrink-0">
-                    {order.patientName || "환자미상"}
+              {/* Card Header */}
+              <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 border-b border-border-subtle/50 shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <span className="text-[14px] font-black text-content-primary truncate">
+                    {order.patientName}
                   </span>
-                  <span className={cn(
-                    "text-[11.5px] font-bold px-1.5 py-0.5 rounded bg-white border border-border-subtle/50 shadow-sm shrink-0",
-                    order.category === "수액" ? "text-blue-600" :
-                    order.category === "지시" ? "text-slate-600" :
-                    order.category === "투약" ? "text-emerald-600" :
-                    "text-purple-600"
-                  )}>
-                    {order.category}
-                  </span>
+                  <div className="flex items-center gap-1 text-mono text-[11px] text-content-muted font-bold bg-white px-1.5 py-0.5 rounded border border-border-subtle/30 shadow-xs">
+                    <Clock className="w-3 h-3 text-[var(--color-brand-primary)]" />
+                    {order.time}
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center">
                   {order.status !== "completed" ? (
                     <button
                       onClick={() => handleCompleteOrder(order.id)}
-                      className="px-2.5 py-1 text-[11.5px] font-bold text-content-primary bg-white border border-border-base hover:bg-[var(--color-brand-primary)] hover:text-white hover:border-[var(--color-brand-primary)] rounded-md transition-all shadow-sm active:scale-95 flex items-center gap-1"
+                      className={cn(
+                        "px-3 py-1 text-[11.5px] font-bold rounded-md transition-all border shadow-sm",
+                        order.isChanged 
+                          ? "bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]" 
+                          : "bg-white text-content-primary border-border-base hover:bg-slate-100"
+                      )}
                     >
-                      <CheckCircle2 className="w-3 h-3" />
-                      완료
+                      {order.isChanged ? "변경 완료" : "완료"}
                     </button>
                   ) : (
-                    <div className="text-[10px] font-bold text-[var(--color-brand-primary)] bg-[var(--color-brand-surface)] px-2 py-0.5 rounded-full border border-[var(--color-brand-primary)]/10 flex items-center gap-1">
-                      <CheckCircle2 className="w-2.5 h-2.5" />
-                      수행완료
-                    </div>
+                    <span className="text-[11px] font-bold text-content-muted px-2">수행완료</span>
                   )}
                 </div>
               </div>
 
-              {/* Card Body: Order Info */}
-              <div className="p-3 flex flex-col gap-2.5">
-                <div className="flex flex-col min-w-0">
-                  <div className="text-[12px] font-mono font-black text-[var(--color-brand-primary)]/80 leading-none mb-1.5 uppercase tracking-wider">
-                    {order.code}
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <h4 className="text-[14.5px] font-bold text-content-primary leading-snug">
-                      {order.name}
-                    </h4>
-                    <div className="flex items-center gap-1 text-mono font-bold text-[11px] text-content-tertiary shrink-0 mt-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {order.time}
-                    </div>
-                  </div>
+              {/* Card Body - Content should expand freely */}
+              <div className="p-3 pb-4 flex flex-col gap-2.5 h-auto">
+                <div className="flex flex-col pl-1.5">
+                  <span className="text-[12px] font-mono font-black text-[var(--color-brand-primary)] opacity-70 leading-none mb-1 uppercase tracking-wider">{order.code}</span>
+                  <h4 className="text-[15px] font-bold text-content-primary leading-tight">{order.name}</h4>
                 </div>
 
-                {/* Dose & Method Row - Enhanced Visibility */}
+                {/* Dosage Row - Large Numerical Data */}
                 {(order.dose !== "-" || order.method !== "-") && (
-                  <div className="flex items-center gap-4 bg-surface-hover/40 px-2.5 py-2 rounded-lg border border-border-subtle/30">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] text-content-muted font-extrabold uppercase tracking-widest">Dose</span>
-                      <span className="text-[13px] font-mono font-bold text-content-secondary">
-                        {order.dose}{order.unit} × {order.frequency}
-                      </span>
+                  <div className="mx-1.5 flex items-center gap-4 py-1.5">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[12px] font-bold text-content-muted">1회량</span>
+                      <span className="text-[17px] font-mono font-black text-content-primary leading-none">{order.dose}{order.unit} × {order.frequency}</span>
                     </div>
-                    <div className="w-px h-5 bg-border-subtle/60" />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[9px] text-content-muted font-extrabold uppercase tracking-widest">Method</span>
-                      <span className="text-[13px] font-bold text-content-secondary">
-                        {order.method}
-                      </span>
+                    <div className="w-px h-4 bg-border-subtle/80" />
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[12px] font-bold text-content-muted">용법</span>
+                      <span className="text-[15px] font-black text-[var(--color-brand-primary)] leading-none">{order.method}</span>
                     </div>
                   </div>
                 )}
 
-                {/* Remarks */}
-                <p className="text-[12px] leading-relaxed text-content-tertiary italic px-1">
-                  {order.remarks}
-                </p>
+                {/* Remarks - Fully Visible */}
+                {order.remarks && (
+                  <div className="mx-1.5 pl-3 border-l-2 border-[var(--color-brand-primary)]/20 py-0.5 mt-0.5">
+                    <p className="text-[13px] leading-relaxed text-content-tertiary italic font-medium break-words">
+                      {order.remarks}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           ))

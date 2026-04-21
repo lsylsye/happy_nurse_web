@@ -72,7 +72,7 @@ export function FindPassword() {
 
           <Button
             size="lg"
-            className="w-full h-14 mt-6 bg-[var(--color-brand-primary)]/80 hover:bg-[var(--color-brand-primary)] !text-white font-bold text-body-base rounded-xl transition-all duration-300 flex items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-[var(--color-brand-primary)]/10 hover:shadow-[var(--color-brand-primary)]/20 bg-[#ff62a8cc]"
+            className="w-full h-14 mt-6 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-hover)] !text-white font-bold text-body-base rounded-xl transition-all duration-300 flex items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-[var(--color-brand-primary)]/20 hover:shadow-[var(--color-brand-primary)]/30"
           >
             <span className="!text-white text-body-base">임시 비밀번호 발송</span>
           </Button>

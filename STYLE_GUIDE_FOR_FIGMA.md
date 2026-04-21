@@ -7,9 +7,9 @@
 ## 1. Color System (Variables)
 
 ### 🎨 Brand Colors (Primary)
-- **Brand Primary:** `#FF0072` (메인 포인트 컬러)
-- **Brand Hover:** `#E60066` (포인터 호버 시)
-- **Brand Surface:** `#FFF0F5` (연한 핑크 배경, 선택 강조)
+- **Brand Primary:** `#15289F` (메인 포인트 컬러)
+- **Brand Hover:** `#101E7A` (포인터 호버 시)
+- **Brand Surface:** `#E7E9F5` (연한 블루 배경, 선택 강조)
 - **Brand Text:** `#FFFFFF` (브랜드 배경 위 텍스트)
 
 ### 🌑 Sub Colors (Navy/Enterprise)
@@ -29,7 +29,7 @@
 - **Destructive:** `#EF4444` (삭제, 에러 컬러)
 
 ### ⚠️ 1.1. 메인 컬러 사용 가이드 (Usage Guidelines)
-메인 컬러인 **Brand Primary(#FF0072)**는 채도가 매우 높은 쨍한 색상입니다. 전문적인 의료 시스템의 가독성과 시각적 안정성을 위해 아래 규칙을 반드시 준수하세요.
+메인 컬러인 **Brand Primary(#15289F)**는 신뢰감을 주는 깊은 네이비 블루 색상입니다. 전문적인 의료 시스템의 가독성과 시각적 안정성을 위해 아래 규칙을 반드시 준수하세요.
 
 1. **면적 제한:** 넓은 배경이나 큰 박스 모델에 원색 그대로를 사용하는 것을 지양합니다. 시각적 피로를 유발할 수 있습니다.
 2. **포인트 강조:** 버튼, 핵심 아이콘, 알림 뱃지, 상태 표시 바(Indicator) 등 시선을 즉시 유도해야 하는 작은 요소에 한정적으로 사용합니다.
@@ -79,7 +79,7 @@
 - **Layout:** 50:50 Split-screen.
 - **Divider:** 좌측 패널 우측면에 부드러운 유기적 곡선(SVG Curve) 적용.
 - **Visuals:** 메인 컬러 기반의 3D 블러 그라데이션 + 플로팅 마스코트 캐릭터.
-- **Shadows:** 고중량 카드에 `shadow-[0_40px_50px_rgba(255,0,114,0.2)]` 적용.
+- **Shadows:** 고중량 카드에 `shadow-[0_40px_50px_rgba(21,40,159,0.2)]` 적용.
 
 ### 📋 EMR Dashboard
 - **Sidebar Background:** 사이드바와 대기 메모 패널은 모두 `Surface-Base(#FAFAFA)`로 통일.
