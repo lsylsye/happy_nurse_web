@@ -98,7 +98,7 @@ export function DashboardLayout({
             type="button"
             onClick={onOpenLeft}
             aria-label="좌측 사이드바 펼치기"
-            className="absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-md bg-white/90 backdrop-blur border border-border-base/60 text-content-secondary shadow-sm hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-r-md bg-white/95 backdrop-blur border border-l-0 border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
           >
             <PanelLeftOpen className="h-4 w-4" />
           </button>
@@ -110,7 +110,7 @@ export function DashboardLayout({
             type="button"
             onClick={onOpenRight}
             aria-label="우측 패널 펼치기"
-            className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-md bg-white/90 backdrop-blur border border-border-base/60 text-content-secondary shadow-sm hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 flex h-10 w-6 items-center justify-center rounded-l-md bg-white/95 backdrop-blur border border-r-0 border-border-base/60 text-content-secondary shadow-md hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
           >
             <PanelRightOpen className="h-4 w-4" />
           </button>

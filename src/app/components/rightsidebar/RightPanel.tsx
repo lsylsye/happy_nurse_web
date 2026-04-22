@@ -9,18 +9,18 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-type TabType = 'orders' | 'alerts';
+type TabType = "orders" | "alerts";
 
 interface RightPanelProps {
   onCollapse?: () => void;
 }
 
 export function RightPanel({ onCollapse }: RightPanelProps = {}) {
-  const [activeTab, setActiveTab] = useState<TabType>('orders');
+  const [activeTab, setActiveTab] = useState<TabType>("orders");
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
-      {/* Tab Switcher Header - Removed border-b and reduced padding */}
+      {/* Tab Switcher Header */}
       <div className="px-3 pt-3 pb-1 bg-[var(--color-surface-base)]/90 backdrop-blur-md">
         {onCollapse && (
           <div className="flex justify-end mb-1.5">
@@ -36,21 +36,24 @@ export function RightPanel({ onCollapse }: RightPanelProps = {}) {
         )}
         <div className="flex p-1 bg-[var(--color-surface-hover)] rounded-lg">
           <button
-            onClick={() => setActiveTab('orders')}
-            className={cn("flex-1 py-2 text-body-sm font-bold rounded-md transition-all flex items-center justify-center gap-1.5 text-[#ff60a7]", activeTab === 'orders'
-    ? "bg-white text-[var(--color-brand-primary)] shadow-sm"
-    : "text-content-muted hover:text-content-secondary")}
+            onClick={() => setActiveTab("orders")}
+            className={cn(
+              "flex-1 py-2 text-body-sm font-bold rounded-md transition-all flex items-center justify-center gap-1.5",
+              activeTab === "orders"
+                ? "bg-white text-[var(--color-brand-primary)] shadow-sm"
+                : "text-content-muted hover:text-content-secondary",
+            )}
           >
             <ClipboardList className="w-4 h-4" />
             의사 오더
           </button>
           <button
-            onClick={() => setActiveTab('alerts')}
+            onClick={() => setActiveTab("alerts")}
             className={cn(
               "flex-1 py-2 text-body-sm font-bold rounded-md transition-all flex items-center justify-center gap-1.5",
-              activeTab === 'alerts'
+              activeTab === "alerts"
                 ? "bg-white text-[var(--color-brand-primary)] shadow-sm"
-                : "text-content-muted hover:text-content-secondary"
+                : "text-content-muted hover:text-content-secondary",
             )}
           >
             <Bell className="w-4 h-4" />
@@ -61,7 +64,7 @@ export function RightPanel({ onCollapse }: RightPanelProps = {}) {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'orders' ? <STTPanel /> : <PatientAlerts />}
+        {activeTab === "orders" ? <STTPanel /> : <PatientAlerts />}
       </div>
     </div>
   );

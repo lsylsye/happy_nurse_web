@@ -57,6 +57,22 @@ type DrugInfo = {
   method: string;
 };
 
+// 간호 기록 단일 행 타입 (STT 줄글 + NFC 구조화 기록 공용)
+type NursingRecord = {
+  id: number;
+  time: string;
+  category: string;
+  content: string;
+  status: string;
+  writer: string;
+  isConfirmed: boolean;
+  isHandover?: boolean;
+  isAISuggested?: boolean;
+  patientId?: string;
+  source?: string;
+  drug?: DrugInfo;
+};
+
 function NfcDrugContent({
   drug,
   editable,
@@ -67,104 +83,103 @@ function NfcDrugContent({
   onChange: (patch: Partial<DrugInfo>) => void;
 }) {
   const valueInputBase =
-    "bg-transparent border-b border-dashed border-[var(--color-border-base)] focus:outline-none focus:border-[var(--color-brand-primary)] px-0.5";
+    "bg-white border border-[var(--color-border-base)] rounded px-1.5 py-0.5 shadow-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-primary)]/20 focus:border-[var(--color-brand-primary)] transition-colors";
+
+  const divider = (
+    <span className="text-border-base select-none">·</span>
+  );
 
   return (
-    <div className="px-1.5 py-1 flex flex-col gap-1.5">
-      {/* 약물명 / 코드 */}
+    <div className="px-1.5 py-1 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-body-sm">
       {editable ? (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <input
-            value={drug.code}
-            onChange={(e) => onChange({ code: e.target.value })}
-            onClick={(e) => e.stopPropagation()}
-            className={cn(
-              valueInputBase,
-              "w-[96px] text-[12px] font-mono font-bold text-[var(--color-brand-primary)]",
-            )}
-          />
-          <input
-            value={drug.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-            onClick={(e) => e.stopPropagation()}
-            className={cn(
-              valueInputBase,
-              "flex-1 min-w-[140px] text-[14px] font-bold text-content-primary",
-            )}
-          />
-        </div>
+        <input
+          value={drug.code}
+          onChange={(e) => onChange({ code: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            valueInputBase,
+            "w-[96px] text-[14px] font-mono font-bold text-[var(--color-brand-primary)]",
+          )}
+        />
       ) : (
-        <div className="flex items-baseline gap-2">
-          <span className="text-[12px] font-mono font-bold text-[var(--color-brand-primary)]">
-            {drug.code}
-          </span>
-          <span className="text-[14px] font-bold text-content-primary">
-            {drug.name}
-          </span>
-        </div>
+        <span className="text-[14px] font-mono font-bold text-[var(--color-brand-primary)]">
+          {drug.code}
+        </span>
+      )}
+      {editable ? (
+        <input
+          value={drug.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            valueInputBase,
+            "min-w-[160px] flex-1 text-[13px] font-bold text-content-primary",
+          )}
+        />
+      ) : (
+        <span className="text-[13px] font-bold text-content-primary">
+          {drug.name}
+        </span>
       )}
 
-      {/* 필드 리스트 */}
-      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-body-sm items-baseline">
-        <span className="text-content-muted font-bold">1회 투여량</span>
-        <div className="flex items-baseline gap-1">
-          {editable ? (
-            <input
-              value={drug.dose}
-              onChange={(e) => onChange({ dose: e.target.value })}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                valueInputBase,
-                "w-16 text-content-primary font-semibold",
-              )}
-            />
-          ) : (
-            <span className="text-content-primary font-semibold">
-              {drug.dose}
-            </span>
-          )}
-          <span className="text-content-muted">{drug.unit}</span>
-        </div>
+      {divider}
 
-        <span className="text-content-muted font-bold">횟수</span>
-        <div className="flex items-baseline gap-1">
-          {editable ? (
-            <input
-              value={drug.frequency}
-              onChange={(e) => onChange({ frequency: e.target.value })}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                valueInputBase,
-                "w-12 text-content-primary font-semibold",
-              )}
-            />
-          ) : (
-            <span className="text-content-primary font-semibold">
-              {drug.frequency}
-            </span>
+      <span className="text-content-muted font-bold">1회 투여량</span>
+      {editable ? (
+        <input
+          value={drug.dose}
+          onChange={(e) => onChange({ dose: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            valueInputBase,
+            "w-14 text-content-primary font-semibold",
           )}
-          <span className="text-content-muted">회</span>
-        </div>
+        />
+      ) : (
+        <span className="text-content-primary font-semibold">
+          {drug.dose}
+        </span>
+      )}
+      <span className="text-content-muted">{drug.unit}</span>
 
-        <span className="text-content-muted font-bold">용법</span>
-        <div className="flex items-baseline gap-1">
-          {editable ? (
-            <input
-              value={drug.method}
-              onChange={(e) => onChange({ method: e.target.value })}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                valueInputBase,
-                "w-20 text-content-primary font-semibold",
-              )}
-            />
-          ) : (
-            <span className="text-content-primary font-semibold">
-              {drug.method}
-            </span>
+      {divider}
+
+      <span className="text-content-muted font-bold">횟수</span>
+      {editable ? (
+        <input
+          value={drug.frequency}
+          onChange={(e) => onChange({ frequency: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            valueInputBase,
+            "w-10 text-content-primary font-semibold",
           )}
-        </div>
-      </div>
+        />
+      ) : (
+        <span className="text-content-primary font-semibold">
+          {drug.frequency}
+        </span>
+      )}
+      <span className="text-content-muted">회</span>
+
+      {divider}
+
+      <span className="text-content-muted font-bold">용법</span>
+      {editable ? (
+        <input
+          value={drug.method}
+          onChange={(e) => onChange({ method: e.target.value })}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            valueInputBase,
+            "w-16 text-content-primary font-semibold",
+          )}
+        />
+      ) : (
+        <span className="text-content-primary font-semibold">
+          {drug.method}
+        </span>
+      )}
     </div>
   );
 }
@@ -184,40 +199,20 @@ function WordWithSuggestion({
   onReplace,
   enabled = true,
 }: {
-  word: string,
-  onReplace: (newWord: string) => void,
-  enabled?: boolean
+  word: string;
+  onReplace: (newWord: string) => void;
+  enabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  // 팝오버가 열릴 때 당시의 단어/제안 목록을 "얼려" 두어, 단어가 바뀌어도 같은 팝오버 내용이 유지되게 함
-  const [frozen, setFrozen] = useState<{ cleanWord: string; suggestions: string[] } | null>(null);
 
   const cleanWord = word.replace(/[.,]$/g, "");
   const currentSuggestions = MEDICAL_SUGGESTIONS[cleanWord];
 
-  const handleOpenChange = (next: boolean) => {
-    if (next) {
-      if (enabled && currentSuggestions) {
-        setFrozen({ cleanWord, suggestions: currentSuggestions });
-        setOpen(true);
-      }
-    } else {
-      setOpen(false);
-      setFrozen(null);
-    }
-  };
-
-  if (!enabled) return <>{word} </>;
-
-  // 팝오버가 닫혀 있고 현재 단어에 제안도 없으면 평문
-  if (!open && !currentSuggestions) return <>{word} </>;
-
-  // 열려 있는 동안은 frozen, 닫혀 있으면 현재 단어 기준
-  const activeCleanWord = open && frozen ? frozen.cleanWord : cleanWord;
-  const suggestions = open && frozen ? frozen.suggestions : currentSuggestions || [];
+  // 제안이 없거나 편집 불가 상태면 평문으로 렌더
+  if (!enabled || !currentSuggestions) return <>{word} </>;
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <span
           onClick={(e) => e.stopPropagation()}
@@ -238,17 +233,15 @@ function WordWithSuggestion({
           <AlertCircle className="size-3" />
         </div>
         <div className="flex flex-col gap-0.5">
-          {suggestions.map((suggestion) => (
+          {currentSuggestions.map((suggestion) => (
             <button
               key={suggestion}
               onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // 현재 실제 단어의 clean 부분을 제안으로 치환 (cleanWord가 바뀌었을 수 있으므로 activeCleanWord 사용)
-                const target = cleanWord || activeCleanWord;
-                onReplace(word.replace(target, suggestion));
-                // 팝오버는 유지 — 바깥 클릭으로만 닫힘
+                // 현재 단어의 clean 부분을 제안으로 치환. 팝오버는 유지.
+                onReplace(word.replace(cleanWord, suggestion));
               }}
               className="flex items-center justify-between w-full px-2 py-1.5 text-body-sm font-bold text-content-secondary hover:bg-[var(--color-brand-surface)] hover:text-[var(--color-brand-primary)] rounded transition-all text-left group"
             >
@@ -591,11 +584,11 @@ export function EMRGrid() {
   const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
   const [activeTab, setActiveTab] = useState<"nursing" | "order" | "handover">("nursing");
   // EMRGrid는 현재 p1(김가민) 단일 환자 화면. patientId가 없거나 "p1"인 기록만 표시.
-  const [records, setRecords] = useState(
+  const [records, setRecords] = useState<NursingRecord[]>(
     INITIAL_RECORDS.filter((r) => {
       const pid = (r as { patientId?: string }).patientId;
       return !pid || pid === "p1";
-    }),
+    }) as NursingRecord[],
   );
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [newRecordText, setNewRecordText] = useState("");
@@ -621,10 +614,12 @@ export function EMRGrid() {
   const [editingRecordId, setEditingRecordId] = useState<
     number | null
   >(null);
+  // 편집 중인 행의 임시 상태. "완료" 누를 때만 records에 반영된다.
+  const [draftRecord, setDraftRecord] = useState<NursingRecord | null>(null);
   // Global edit session (enables per-row edit/confirm buttons)
   const [isGlobalEditing, setIsGlobalEditing] = useState(false);
   const [recordsSnapshot, setRecordsSnapshot] = useState<
-    typeof INITIAL_RECORDS | null
+    NursingRecord[] | null
   >(null);
 
   const [patientInfo, setPatientInfo] = useState(
@@ -633,7 +628,7 @@ export function EMRGrid() {
 
   const handleUpdateRecord = (
     id: number,
-    updates: Partial<(typeof INITIAL_RECORDS)[0]>,
+    updates: Partial<NursingRecord>,
   ) => {
     setRecords((prev) =>
       prev.map((r) => (r.id === id ? { ...r, ...updates } : r)),
@@ -679,6 +674,22 @@ export function EMRGrid() {
     if (recordsSnapshot) setRecords(recordsSnapshot);
     setIsGlobalEditing(false);
     setRecordsSnapshot(null);
+    setEditingRecordId(null);
+  };
+
+  const enterEdit = (record: NursingRecord) => {
+    setDraftRecord({
+      ...record,
+      drug: record.drug ? { ...record.drug } : undefined,
+    });
+    setEditingRecordId(record.id);
+  };
+
+  const commitEdit = () => {
+    if (draftRecord) {
+      handleUpdateRecord(draftRecord.id, draftRecord);
+    }
+    setDraftRecord(null);
     setEditingRecordId(null);
   };
 
@@ -784,7 +795,7 @@ export function EMRGrid() {
     }
   };
 
-  const recordPasses = (record: typeof INITIAL_RECORDS[0]) => {
+  const recordPasses = (record: NursingRecord) => {
     if (selectedTimeHour !== null) {
       const hour = parseInt(record.time.split(":")[0], 10);
       if (hour < selectedTimeHour) return false;
@@ -913,16 +924,14 @@ export function EMRGrid() {
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="brand"
-                  size="sm"
-                  className="h-8 px-3 rounded text-[12px]"
+                  className="h-9 px-3 py-2 rounded-md text-sm font-bold shadow-sm"
                   onClick={saveGlobalEdit}
                 >
                   저장
                 </Button>
                 <Button
                   variant="brandOutline"
-                  size="sm"
-                  className="h-8 px-3 rounded text-[12px]"
+                  className="h-9 px-3 py-2 rounded-md text-sm font-bold shadow-sm"
                   onClick={cancelGlobalEdit}
                 >
                   취소
@@ -931,12 +940,11 @@ export function EMRGrid() {
             ) : (
               <Button
                 variant="brandOutline"
-                size="sm"
-                className="h-8 px-3 rounded gap-1.5 text-[12px]"
+                className="h-9 px-3 py-2 rounded-md gap-2 text-sm font-bold shadow-sm"
                 onClick={startGlobalEdit}
               >
-                <Edit2 className="w-3.5 h-3.5" />
-                전체 수정
+                <Edit2 className="w-4 h-4" />
+                편집
               </Button>
             )}
           </div>
@@ -1099,7 +1107,8 @@ export function EMRGrid() {
                 <div className="flex flex-col flex-1 pb-10">
                   {filteredRecords.map((record, index) => {
                     const isMine = record.writer === currentUser;
-                    const isEditingRow = editingRecordId === record.id && isMine && isGlobalEditing;
+                    const canEditThisRow = isMine;
+                    const isEditingRow = editingRecordId === record.id && canEditThisRow && !isGlobalEditing;
 
                     return (
                       <React.Fragment key={record.id}>
@@ -1174,38 +1183,29 @@ export function EMRGrid() {
                       )}
 
                       <div
-                        ref={(el) =>
-                          (recordRefs.current[record.id] = el)
-                        }
+                        ref={(el) => {
+                          recordRefs.current[record.id] = el;
+                        }}
                         className={cn(
                           "grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-1 border-b border-[var(--color-border-base)]/50 items-start hover:bg-[var(--color-surface-hover)]/40 transition-all group relative",
                           isEditingRow &&
                             "bg-[var(--color-brand-surface)]/20 hover:bg-[var(--color-brand-surface)]/20 shadow-inner",
                           !record.isConfirmed &&
-                            "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-[var(--color-content-tertiary)]",
+                            "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-[var(--color-brand-primary)]/30",
                         )}
-                        onClick={(e) => {
-                          // 퀵 수정 팝오버 내부에서 발생한 클릭은 편집 모드 전환 차단
-                          if ((e.target as HTMLElement).closest("[data-quick-edit-popover]")) return;
-                          if (
-                            isGlobalEditing &&
-                            !record.isConfirmed &&
-                            record.writer === currentUser
-                          ) {
-                            setEditingRecordId(record.id);
-                          }
-                        }}
                       >
                         {/* Content Column */}
                         <div className="pt-0.5 border-r border-[var(--color-border-base)]/50 pr-4 min-w-0">
                           {isEditingRow ? (
                             <TimePicker
-                              value={record.time}
-                              onSelect={(newTime) =>
-                                handleUpdateRecord(record.id, {
-                                  time: newTime,
-                                })
-                              }
+                              value={draftRecord?.time ?? record.time}
+                              onSelect={(newTime) => {
+                                if (draftRecord)
+                                  setDraftRecord({
+                                    ...draftRecord,
+                                    time: newTime,
+                                  });
+                              }}
                               className="w-full border-transparent bg-surface-base/50 shadow-none px-1 h-7 hover:bg-white hover:border-border-subtle transition-all"
                             />
                           ) : (
@@ -1220,13 +1220,18 @@ export function EMRGrid() {
                           {(record as { source?: string }).source === "nfc" &&
                           (record as { drug?: DrugInfo }).drug ? (
                             <NfcDrugContent
-                              drug={(record as { drug?: DrugInfo }).drug as DrugInfo}
-                              editable={isEditingRow && !record.isConfirmed}
+                              drug={
+                                (isEditingRow && draftRecord?.drug
+                                  ? draftRecord.drug
+                                  : (record as { drug?: DrugInfo }).drug) as DrugInfo
+                              }
+                              editable={isEditingRow}
                               onChange={(patch) => {
-                                const current = (record as { drug?: DrugInfo }).drug;
-                                if (!current) return;
-                                const newDrug = { ...current, ...patch };
-                                handleUpdateRecord(record.id, { drug: newDrug } as Partial<(typeof INITIAL_RECORDS)[0]>);
+                                if (!draftRecord?.drug) return;
+                                setDraftRecord({
+                                  ...draftRecord,
+                                  drug: { ...draftRecord.drug, ...patch },
+                                });
                               }}
                             />
                           ) : isEditingRow ? (
@@ -1241,19 +1246,15 @@ export function EMRGrid() {
                                     el.style.height = `${el.scrollHeight}px`;
                                   }
                                 }}
-                                value={record.content}
+                                value={draftRecord?.content ?? record.content}
                                 onChange={(e) => {
-                                  handleUpdateRecord(record.id, {
-                                    content: e.target.value,
-                                  });
+                                  if (draftRecord)
+                                    setDraftRecord({
+                                      ...draftRecord,
+                                      content: e.target.value,
+                                    });
                                   e.target.style.height = "auto";
                                   e.target.style.height = `${e.target.scrollHeight}px`;
-                                }}
-                                onBlur={(e) => {
-                                  if (editingRecordId !== record.id) return;
-                                  const rowEl = recordRefs.current[record.id];
-                                  if (rowEl && rowEl.contains(e.relatedTarget as Node)) return;
-                                  setEditingRecordId(null);
                                 }}
                                 className="w-full bg-transparent text-body-sm leading-[1.6] text-content-primary resize-none outline-none overflow-hidden block p-0 m-0 min-h-[1.6em]"
                                 rows={1}
@@ -1290,53 +1291,70 @@ export function EMRGrid() {
 
                         {/* Actions Column */}
                         <div className="pt-1 h-full flex items-center justify-center gap-1.5">
-                          {isGlobalEditing && !record.isConfirmed && (
-                            isMine ? (
+                          {isMine ? (
+                            canEditThisRow && (
                               <>
-                                <Button
-                                  variant="brandOutline"
-                                  size="sm"
-                                  className="h-7 px-2.5 rounded text-[12px]"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingRecordId(
-                                      editingRecordId === record.id
-                                        ? null
-                                        : record.id,
-                                    );
-                                  }}
-                                >
-                                  {editingRecordId === record.id
-                                    ? "완료"
-                                    : "수정"}
-                                </Button>
-                                <Button
-                                  variant="brand"
-                                  size="sm"
-                                  className="h-7 px-2.5 rounded text-[12px]"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleConfirmRecord(record.id);
-                                    if (editingRecordId === record.id)
-                                      setEditingRecordId(null);
-                                  }}
-                                >
-                                  확정
-                                </Button>
-                                {editingRecordId === record.id && (
-                                  <button
+                                {isGlobalEditing ? (
+                                  <Button
+                                    variant="brandOutline"
+                                    size="sm"
+                                    className="h-7 px-2.5 rounded text-[12px]"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleDeleteRecord(record.id);
                                     }}
-                                    className="p-1 text-content-muted hover:text-[var(--color-destructive)] transition-all rounded hover:bg-[var(--color-destructive)]/10"
-                                    title="삭제"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                    삭제
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="brandOutline"
+                                    size="sm"
+                                    className="h-7 px-2.5 rounded text-[12px]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (editingRecordId === record.id) {
+                                        commitEdit();
+                                      } else {
+                                        enterEdit(record);
+                                      }
+                                    }}
+                                  >
+                                    {editingRecordId === record.id
+                                      ? "완료"
+                                      : "수정"}
+                                  </Button>
+                                )}
+                                {!record.isConfirmed && !isGlobalEditing && (
+                                  <Button
+                                    variant="brand"
+                                    size="sm"
+                                    className="h-7 px-2.5 rounded text-[12px]"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // draft가 있으면 같이 커밋 + 확정 처리
+                                      if (
+                                        editingRecordId === record.id &&
+                                        draftRecord
+                                      ) {
+                                        handleUpdateRecord(record.id, {
+                                          ...draftRecord,
+                                          isConfirmed: true,
+                                        });
+                                        setDraftRecord(null);
+                                        setEditingRecordId(null);
+                                      } else {
+                                        handleConfirmRecord(record.id);
+                                      }
+                                    }}
+                                  >
+                                    확정
+                                  </Button>
                                 )}
                               </>
-                            ) : (
+                            )
+                          ) : (
+                            !record.isConfirmed && (
                               <div className="px-3 py-1.5 text-[11px] font-bold text-content-muted bg-slate-100 border border-border-subtle rounded-md whitespace-nowrap opacity-70 cursor-not-allowed">
                                 확정 대기
                               </div>
@@ -1449,10 +1467,11 @@ export function EMRGrid() {
                       <div className="text-center text-[var(--color-content-primary)] font-bold">{order.method}</div>
                       <div className="flex justify-center">
                         <span className={cn(
-                          "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider",
-                          order.status === "active" ? "bg-[var(--color-brand-surface)] text-[var(--color-brand-primary)] border border-[var(--color-brand-primary)]/20" :
-                          order.status === "completed" ? "bg-slate-100 text-slate-500 border border-slate-200" :
-                          "bg-amber-50 text-amber-600 border border-amber-100"
+                          "text-[13px] font-semibold",
+                          order.status === "진행" ? "text-[var(--color-brand-primary)]" :
+                          order.status === "완료" ? "text-slate-500" :
+                          order.status === "검사중" ? "text-amber-600" :
+                          "text-slate-500"
                         )}>
                           {order.status}
                         </span>

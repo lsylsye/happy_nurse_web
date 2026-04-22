@@ -342,7 +342,7 @@ export const INITIAL_ORDERS = [
     frequency: "1",
     unit: "bag",
     method: "IV",
-    status: "active",
+    status: "진행",
     remarks: "80cc/hr 유지",
   },
   {
@@ -354,7 +354,7 @@ export const INITIAL_ORDERS = [
     frequency: "-",
     unit: "-",
     method: "-",
-    status: "active",
+    status: "접수",
     remarks: "자정부터 금식 유지",
   },
   {
@@ -366,7 +366,7 @@ export const INITIAL_ORDERS = [
     frequency: "3",
     unit: "tab",
     method: "PO",
-    status: "completed",
+    status: "완료",
     remarks: "식후 30분",
   },
   {
@@ -378,7 +378,7 @@ export const INITIAL_ORDERS = [
     frequency: "1",
     unit: "-",
     method: "-",
-    status: "completed",
+    status: "검사중",
     remarks: "오전 6시 채혈",
   },
   {
@@ -390,7 +390,7 @@ export const INITIAL_ORDERS = [
     frequency: "1",
     unit: "-",
     method: "-",
-    status: "pending",
+    status: "검사중",
     remarks: "동의서 확인 요망",
   },
 ];

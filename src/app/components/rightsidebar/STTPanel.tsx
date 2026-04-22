@@ -13,6 +13,8 @@ function cn(...inputs: ClassValue[]) {
 }
 
 // Data Types
+type OrderStatus = "접수" | "진행" | "검사중" | "완료";
+
 interface DoctorOrder {
   id: string;
   category: "수액" | "지시" | "투약" | "LIS" | "영상";
@@ -22,12 +24,19 @@ interface DoctorOrder {
   frequency: string;
   unit: string;
   method: string;
-  status: "active" | "completed" | "pending";
+  status: OrderStatus;
   time: string;
   remarks: string;
   patientName: string;
   isChanged?: boolean;
 }
+
+const STATUS_TEXT_COLOR: Record<OrderStatus, string> = {
+  접수: "text-slate-500",
+  진행: "text-[var(--color-brand-primary)]",
+  검사중: "text-amber-600",
+  완료: "text-emerald-600",
+};
 
 // Mock Orders
 // 처방 코드 체계 (원내 코드: 2-letter prefix + 4자리 숫자)
@@ -46,7 +55,7 @@ const INITIAL_ORDERS: DoctorOrder[] = [
     frequency: "2",
     unit: "tab",
     method: "PO",
-    status: "active",
+    status: "진행",
     time: "15:30",
     remarks: "기존 500mg QD에서 1000mg BID로 변경됨 (통증 조절 목적)",
     patientName: "박민수",
@@ -61,7 +70,7 @@ const INITIAL_ORDERS: DoctorOrder[] = [
     frequency: "1",
     unit: "bag",
     method: "IV",
-    status: "active",
+    status: "진행",
     time: "14:15",
     remarks: "80cc/hr 유지 및 I/O Check 시작 요망.",
     patientName: "김가민",
@@ -75,7 +84,7 @@ const INITIAL_ORDERS: DoctorOrder[] = [
     frequency: "-",
     unit: "-",
     method: "-",
-    status: "active",
+    status: "접수",
     time: "14:30",
     remarks: "자정부터 금식 유지. 보호자 안내 완료.",
     patientName: "이영희",
@@ -89,7 +98,7 @@ const INITIAL_ORDERS: DoctorOrder[] = [
     frequency: "3",
     unit: "tab",
     method: "PO",
-    status: "completed",
+    status: "완료",
     time: "13:00",
     remarks: "식후 30분 투여 완료.",
     patientName: "박민수",
@@ -103,7 +112,7 @@ const INITIAL_ORDERS: DoctorOrder[] = [
     frequency: "1",
     unit: "-",
     method: "-",
-    status: "pending",
+    status: "검사중",
     time: "12:30",
     remarks: "영상의학과 연락 대기 중. 동의서 확인 요망.",
     patientName: "최지윤",
@@ -130,7 +139,7 @@ export function STTPanel() {
   const handleCompleteOrder = (id: string) => {
     setOrders((prev) =>
       prev.map((order) =>
-        order.id === id ? { ...order, status: "completed" } : order,
+        order.id === id ? { ...order, status: "완료" } : order,
       ),
     );
   };
@@ -165,62 +174,62 @@ export function STTPanel() {
               className={cn(
                 "relative bg-white rounded-xl border border-border-base shadow-sm flex flex-col shrink-0 transition-all hover:border-[var(--color-brand-primary)]/30",
                 order.isChanged && "border-l-4 border-l-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/20 bg-[var(--color-brand-surface)]/20",
-                order.status === "completed" && "opacity-70 bg-slate-50/50"
+                order.status === "완료" && "opacity-70 bg-slate-50/50"
               )}
             >
-              {/* Card Header */}
-              <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 border-b border-border-subtle/50 shrink-0">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="flex items-center gap-1 text-mono text-[11px] text-content-muted font-bold bg-white px-1.5 py-0.5 rounded border border-border-subtle/30 shadow-xs">
-                    <Clock className="w-3 h-3 text-[var(--color-brand-primary)]" />
-                    {order.time}
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  {order.status !== "completed" ? (
-                    <button
-                      onClick={() => handleCompleteOrder(order.id)}
-                      className={cn(
-                        "px-3 py-1 text-[11.5px] font-bold rounded-md transition-all border shadow-sm",
-                        order.isChanged 
-                          ? "bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)]" 
-                          : "bg-white text-content-primary border-border-base hover:bg-slate-100"
-                      )}
-                    >
-                      {order.isChanged ? "변경 완료" : "완료"}
-                    </button>
-                  ) : (
-                    <span className="text-[11px] font-bold text-content-muted px-2">수행완료</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Card Body - Content should expand freely */}
+              {/* Card Body */}
               <div className="p-3 pb-4 flex flex-col gap-2.5 h-auto">
                 <div className="flex flex-col pl-1.5">
-                  <span className="text-[12px] font-mono font-black text-[var(--color-brand-primary)] opacity-70 leading-none mb-1 uppercase tracking-wider">{order.code}</span>
-                  <h4 className="text-[15px] font-bold text-content-primary leading-tight">{order.name}</h4>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[14px] font-mono font-black text-[var(--color-brand-primary)] opacity-70 leading-none uppercase tracking-wider">
+                      {order.code}
+                    </span>
+                    {order.isChanged && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[var(--color-brand-primary)] text-white leading-none">
+                        변경
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="text-[15px] font-bold text-content-primary leading-tight">
+                    {order.name}
+                  </h4>
                 </div>
 
-                {/* Dosage Row - Large Numerical Data */}
-                {(order.dose !== "-" || order.method !== "-") && (
-                  <div className="mx-1.5 flex items-center gap-4 py-1.5 flex-wrap">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[12px] font-bold text-content-muted">1회량</span>
-                      <span className="text-[17px] font-mono font-black text-content-primary leading-none">{order.dose}{order.unit}</span>
-                    </div>
-                    <div className="w-px h-4 bg-border-subtle/80" />
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[12px] font-bold text-content-muted">횟수</span>
-                      <span className="text-[17px] font-semibold text-content-primary leading-none">{order.frequency}회</span>
-                    </div>
-                    <div className="w-px h-4 bg-border-subtle/80" />
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[12px] font-bold text-content-muted">용법</span>
-                      <span className="text-[15px] font-black text-[var(--color-brand-primary)] leading-none">{order.method}</span>
-                    </div>
+                {/* 2x2 Info Grid: 1회량 / 횟수 / 용법 / 진행 상태 */}
+                <div className="mx-1.5 grid grid-cols-2 gap-x-4 gap-y-2 py-1.5">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[12px] font-bold text-content-muted shrink-0">1회량</span>
+                    <span className="text-[15px] font-mono font-semibold text-content-primary leading-none">
+                      {order.dose}
+                      {order.unit !== "-" ? order.unit : ""}
+                    </span>
                   </div>
-                )}
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[12px] font-bold text-content-muted shrink-0">횟수</span>
+                    <span className="text-[15px] font-semibold text-content-primary leading-none">
+                      {order.frequency !== "-"
+                        ? `${order.frequency}회${order.unit !== "-" ? `(${order.unit})` : ""}`
+                        : "-"}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[12px] font-bold text-content-muted shrink-0">용법</span>
+                    <span className="text-[15px] font-semibold text-[var(--color-brand-primary)] leading-none">
+                      {order.method}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[12px] font-bold text-content-muted shrink-0">진행 상태</span>
+                    <span
+                      className={cn(
+                        "text-[15px] font-semibold leading-none",
+                        STATUS_TEXT_COLOR[order.status],
+                      )}
+                    >
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
 
                 {/* Remarks - Fully Visible */}
                 {order.remarks && (
