@@ -5,6 +5,8 @@ import {
   HeartPulse,
   Pill,
   Share2,
+  PanelLeftOpen,
+  PanelRightOpen,
 } from "lucide-react";
 import {
   Popover,
@@ -26,6 +28,10 @@ interface DashboardLayoutProps {
   sidebar: ReactNode;
   mainGrid: ReactNode;
   actionPanel: ReactNode;
+  isLeftOpen: boolean;
+  isRightOpen: boolean;
+  onOpenLeft: () => void;
+  onOpenRight: () => void;
 }
 
 const QUICK_ACTIONS = [
@@ -53,6 +59,10 @@ export function DashboardLayout({
   sidebar,
   mainGrid,
   actionPanel,
+  isLeftOpen,
+  isRightOpen,
+  onOpenLeft,
+  onOpenRight,
 }: DashboardLayoutProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -72,18 +82,46 @@ export function DashboardLayout({
   return (
     <div className="fixed inset-0 overflow-hidden bg-[var(--color-accent)] text-content-primary p-[6px] gap-[6px] flex">
       {/* 1. Left (탐색창 - Patient List) */}
-      <aside className="w-[240px] flex-shrink-0 bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border border-border-base/60">
-        {sidebar}
+      <aside
+        className={`${isLeftOpen ? "w-[240px] border" : "w-0 border-0"} flex-shrink-0 bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
+      >
+        <div className="w-[240px] h-full flex flex-col">{sidebar}</div>
       </aside>
 
       {/* 2. Center (메인 워크스페이스 - Nursing Record) */}
       <main className="flex-1 flex flex-col min-w-0 relative z-10">
         {mainGrid}
+
+        {/* Floating "open" button when the left sidebar is collapsed */}
+        {!isLeftOpen && (
+          <button
+            type="button"
+            onClick={onOpenLeft}
+            aria-label="좌측 사이드바 펼치기"
+            className="absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-md bg-white/90 backdrop-blur border border-border-base/60 text-content-secondary shadow-sm hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </button>
+        )}
+
+        {/* Floating "open" button when the right panel is collapsed */}
+        {!isRightOpen && (
+          <button
+            type="button"
+            onClick={onOpenRight}
+            aria-label="우측 패널 펼치기"
+            className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-md bg-white/90 backdrop-blur border border-border-base/60 text-content-secondary shadow-sm hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
+          >
+            <PanelRightOpen className="h-4 w-4" />
+          </button>
+        )}
       </main>
 
       {/* 3. Right (보조창 - Doctor's Order) */}
-      <aside className="w-[280px] flex-shrink-0 bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border border-border-base/60">
-        {actionPanel}
+      <aside
+        className={`${isRightOpen ? "w-[280px] border" : "w-0 border-0"} flex-shrink-0 bg-[var(--color-surface-base)] rounded-[6px] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] overflow-hidden border-border-base/60 transition-[width] duration-300 ease-in-out`}
+      >
+        <div className="w-[280px] h-full flex flex-col">{actionPanel}</div>
       </aside>
 
       {/* Floating Action Button (FAB) */}

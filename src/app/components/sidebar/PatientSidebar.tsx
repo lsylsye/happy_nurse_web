@@ -1,4 +1,4 @@
-import { ChevronDown, Search, User, Users, AlertCircle, LogOut, ChevronRight, UserCheck } from "lucide-react";
+import { ChevronDown, Search, User, AlertCircle, LogOut, ChevronRight, UserCheck, PanelLeftClose } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { cn } from "../ui/utils";
@@ -44,7 +44,11 @@ const MOCK_WARDS = [
   },
 ];
 
-export function PatientSidebar() {
+interface PatientSidebarProps {
+  onCollapse?: () => void;
+}
+
+export function PatientSidebar({ onCollapse }: PatientSidebarProps = {}) {
   const navigate = useNavigate();
   const currentUser = typeof window !== 'undefined' ? localStorage.getItem("currentUser") || "김영희" : "김영희";
   const [activePatientId, setActivePatientId] = useState("p1");
@@ -88,10 +92,16 @@ export function PatientSidebar() {
       <div className="p-3 border-b border-border-base flex flex-col gap-3">
         <div className="flex items-center justify-between px-1">
           <img src={logoImg} alt="해피너스 로고" className="h-5 w-auto object-contain" />
-          <div className="flex items-center gap-1 text-[11px] font-bold text-content-secondary bg-surface-hover px-1.5 py-0.5 rounded">
-            <Users className="w-3 h-3" />
-            {allPatients.length}
-          </div>
+          {onCollapse && (
+            <button
+              type="button"
+              onClick={onCollapse}
+              aria-label="좌측 사이드바 접기"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-[var(--color-surface-hover)] hover:text-content-primary transition"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         <div className="relative">

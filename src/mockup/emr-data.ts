@@ -198,6 +198,25 @@ export const INITIAL_RECORDS = [
     writer: "김영희",
     isConfirmed: false, // → '바이탈/도뇨관/수액' 모두 퀵 수정 제안 (표준 약어 변환 예시)
   },
+  // --- NFC 태깅 기록 샘플 (약물) ---
+  {
+    id: 103,
+    time: "23:55",
+    category: "투약",
+    content: "",
+    status: "pending",
+    writer: "김영희",
+    isConfirmed: false,
+    source: "nfc",
+    drug: {
+      code: "MD1000",
+      name: "Acetaminophen 1000mg Tab.",
+      dose: "1000",
+      unit: "mg",
+      frequency: "2",
+      method: "PO",
+    },
+  },
   // --- p2 이철수 (위절제술 후) 기록 ---
   {
     id: 200,
@@ -307,11 +326,17 @@ export const INITIAL_RECORDS = [
   },
 ];
 
+// 처방 코드 체계 (원내 코드: 2-letter prefix + 4자리 숫자)
+// - MD: 경구/투약(Medication)
+// - IV: 주사/수액(Injection)
+// - LB: 검체검사(Laboratory)
+// - RD: 영상검사(Radiology)
+// - OR: 일반지시(Order)
 export const INITIAL_ORDERS = [
   {
     id: 1,
     category: "수액",
-    code: "N/S 1L",
+    code: "IV0901",
     name: "0.9% Sodium Chloride Inj. 1000ml",
     dose: "1000",
     frequency: "1",
@@ -323,7 +348,7 @@ export const INITIAL_ORDERS = [
   {
     id: 2,
     category: "지시",
-    code: "NPO",
+    code: "OR0001",
     name: "금식 (수술 전)",
     dose: "-",
     frequency: "-",
@@ -335,8 +360,8 @@ export const INITIAL_ORDERS = [
   {
     id: 3,
     category: "투약",
-    code: "APAP 500",
-    name: "Acetaminophen 500mg",
+    code: "MD0500",
+    name: "Acetaminophen 500mg Tab.",
     dose: "1",
     frequency: "3",
     unit: "tab",
@@ -347,8 +372,8 @@ export const INITIAL_ORDERS = [
   {
     id: 4,
     category: "LIS",
-    code: "CBC",
-    name: "Complete Blood Count",
+    code: "LB2501",
+    name: "Complete Blood Count (CBC)",
     dose: "-",
     frequency: "1",
     unit: "-",
@@ -359,7 +384,7 @@ export const INITIAL_ORDERS = [
   {
     id: 5,
     category: "영상",
-    code: "CT-ABD",
+    code: "RD0449",
     name: "Abdomen CT (with contrast)",
     dose: "-",
     frequency: "1",

@@ -1,9 +1,7 @@
 import {
-  CheckCircle2,
   Clock,
   Search,
   ClipboardList,
-  RefreshCcw,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { clsx, type ClassValue } from "clsx";
@@ -32,12 +30,18 @@ interface DoctorOrder {
 }
 
 // Mock Orders
+// 처방 코드 체계 (원내 코드: 2-letter prefix + 4자리 숫자)
+//  - MD: 경구/투약(Medication)
+//  - IV: 주사/수액(Injection)
+//  - LB: 검체검사(Laboratory)
+//  - RD: 영상검사(Radiology)
+//  - OR: 일반지시(Order)
 const INITIAL_ORDERS: DoctorOrder[] = [
   {
     id: "o-new",
     category: "투약",
-    code: "APAP 1000",
-    name: "Acetaminophen 1000mg",
+    code: "MD1000",
+    name: "Acetaminophen 1000mg Tab.",
     dose: "1",
     frequency: "2",
     unit: "tab",
@@ -51,7 +55,7 @@ const INITIAL_ORDERS: DoctorOrder[] = [
   {
     id: "o1",
     category: "수액",
-    code: "N/S 1L",
+    code: "IV0901",
     name: "0.9% Sodium Chloride Inj. 1000ml",
     dose: "1000",
     frequency: "1",
@@ -65,7 +69,7 @@ const INITIAL_ORDERS: DoctorOrder[] = [
   {
     id: "o2",
     category: "지시",
-    code: "NPO",
+    code: "OR0001",
     name: "금식 (수술 전)",
     dose: "-",
     frequency: "-",
@@ -79,8 +83,8 @@ const INITIAL_ORDERS: DoctorOrder[] = [
   {
     id: "o3",
     category: "투약",
-    code: "APAP 500",
-    name: "Acetaminophen 500mg",
+    code: "MD0500",
+    name: "Acetaminophen 500mg Tab.",
     dose: "1",
     frequency: "3",
     unit: "tab",
@@ -93,7 +97,7 @@ const INITIAL_ORDERS: DoctorOrder[] = [
   {
     id: "o4",
     category: "영상",
-    code: "CT-ABD",
+    code: "RD0449",
     name: "Abdomen CT (with contrast)",
     dose: "-",
     frequency: "1",
@@ -108,23 +112,20 @@ const INITIAL_ORDERS: DoctorOrder[] = [
 
 export function STTPanel() {
   const [orders, setOrders] = useState<DoctorOrder[]>(INITIAL_ORDERS);
-  const [activeTab, setActiveTab] = useState<"ongoing" | "completed">("ongoing");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredOrders = useMemo(() => {
-    let result = orders.filter((order) => {
-      const isOngoing = order.status === "active" || order.status === "pending";
-      const matchesTab = activeTab === "ongoing" ? isOngoing : order.status === "completed";
-      const matchesSearch =
+    const result = orders.filter((order) => {
+      return (
         order.name.includes(searchQuery) ||
         order.code.includes(searchQuery) ||
         order.remarks.includes(searchQuery) ||
-        order.patientName.includes(searchQuery);
-      return matchesTab && matchesSearch;
+        order.patientName.includes(searchQuery)
+      );
     });
 
     return [...result].sort((a, b) => (b.isChanged ? 1 : 0) - (a.isChanged ? 1 : 0));
-  }, [orders, activeTab, searchQuery]);
+  }, [orders, searchQuery]);
 
   const handleCompleteOrder = (id: string) => {
     setOrders((prev) =>
@@ -136,35 +137,8 @@ export function STTPanel() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-surface-base)]">
-      {/* 2-Row Compact Header */}
+      {/* Search Header */}
       <div className="bg-white/95 backdrop-blur-md sticky top-0 z-30 flex flex-col gap-2 p-3 border-b border-border-base">
-        <div className="flex bg-[var(--color-surface-hover)] p-1.5 rounded-lg border border-border-subtle shrink-0">
-          <button
-            onClick={() => setActiveTab("ongoing")}
-            className={cn(
-              "flex-1 py-2 text-[14px] font-black rounded-md transition-all flex items-center justify-center gap-2.5",
-              activeTab === "ongoing" ? "bg-white text-[var(--color-brand-primary)] shadow-md" : "text-content-muted hover:text-content-secondary"
-            )}
-          >
-            <span>진행중</span>
-            <span className="opacity-70 font-mono text-body-sm bg-[var(--color-surface-base)] px-2.5 py-0.5 rounded-full border border-border-subtle shadow-inner">
-              {orders.filter((o) => o.status !== "completed").length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("completed")}
-            className={cn(
-              "flex-1 py-2 text-[14px] font-black rounded-md transition-all flex items-center justify-center gap-2.5",
-              activeTab === "completed" ? "bg-white text-[var(--color-brand-primary)] shadow-md" : "text-content-muted hover:text-content-secondary"
-            )}
-          >
-            <span>완료</span>
-            <span className="opacity-70 font-mono text-body-sm bg-[var(--color-surface-base)] px-2.5 py-0.5 rounded-full border border-border-subtle shadow-inner">
-              {orders.filter((o) => o.status === "completed").length}
-            </span>
-          </button>
-        </div>
-
         <div className="relative group px-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted group-focus-within:text-[var(--color-brand-primary)] transition-colors z-10" />
           <Input
@@ -197,9 +171,6 @@ export function STTPanel() {
               {/* Card Header */}
               <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 border-b border-border-subtle/50 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <span className="text-[14px] font-black text-content-primary truncate">
-                    {order.patientName}
-                  </span>
                   <div className="flex items-center gap-1 text-mono text-[11px] text-content-muted font-bold bg-white px-1.5 py-0.5 rounded border border-border-subtle/30 shadow-xs">
                     <Clock className="w-3 h-3 text-[var(--color-brand-primary)]" />
                     {order.time}
@@ -233,10 +204,15 @@ export function STTPanel() {
 
                 {/* Dosage Row - Large Numerical Data */}
                 {(order.dose !== "-" || order.method !== "-") && (
-                  <div className="mx-1.5 flex items-center gap-4 py-1.5">
+                  <div className="mx-1.5 flex items-center gap-4 py-1.5 flex-wrap">
                     <div className="flex items-baseline gap-2">
                       <span className="text-[12px] font-bold text-content-muted">1회량</span>
-                      <span className="text-[17px] font-mono font-black text-content-primary leading-none">{order.dose}{order.unit} × {order.frequency}</span>
+                      <span className="text-[17px] font-mono font-black text-content-primary leading-none">{order.dose}{order.unit}</span>
+                    </div>
+                    <div className="w-px h-4 bg-border-subtle/80" />
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[12px] font-bold text-content-muted">횟수</span>
+                      <span className="text-[17px] font-semibold text-content-primary leading-none">{order.frequency}회</span>
                     </div>
                     <div className="w-px h-4 bg-border-subtle/80" />
                     <div className="flex items-baseline gap-2">

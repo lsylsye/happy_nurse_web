@@ -47,6 +47,128 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// NFC 태깅으로 들어온 약물 기록의 구조화된 값
+type DrugInfo = {
+  code: string;
+  name: string;
+  dose: string;
+  unit: string;
+  frequency: string;
+  method: string;
+};
+
+function NfcDrugContent({
+  drug,
+  editable,
+  onChange,
+}: {
+  drug: DrugInfo;
+  editable: boolean;
+  onChange: (patch: Partial<DrugInfo>) => void;
+}) {
+  const valueInputBase =
+    "bg-transparent border-b border-dashed border-[var(--color-border-base)] focus:outline-none focus:border-[var(--color-brand-primary)] px-0.5";
+
+  return (
+    <div className="px-1.5 py-1 flex flex-col gap-1.5">
+      {/* 약물명 / 코드 */}
+      {editable ? (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <input
+            value={drug.code}
+            onChange={(e) => onChange({ code: e.target.value })}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              valueInputBase,
+              "w-[96px] text-[12px] font-mono font-bold text-[var(--color-brand-primary)]",
+            )}
+          />
+          <input
+            value={drug.name}
+            onChange={(e) => onChange({ name: e.target.value })}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              valueInputBase,
+              "flex-1 min-w-[140px] text-[14px] font-bold text-content-primary",
+            )}
+          />
+        </div>
+      ) : (
+        <div className="flex items-baseline gap-2">
+          <span className="text-[12px] font-mono font-bold text-[var(--color-brand-primary)]">
+            {drug.code}
+          </span>
+          <span className="text-[14px] font-bold text-content-primary">
+            {drug.name}
+          </span>
+        </div>
+      )}
+
+      {/* 필드 리스트 */}
+      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-body-sm items-baseline">
+        <span className="text-content-muted font-bold">1회 투여량</span>
+        <div className="flex items-baseline gap-1">
+          {editable ? (
+            <input
+              value={drug.dose}
+              onChange={(e) => onChange({ dose: e.target.value })}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                valueInputBase,
+                "w-16 text-content-primary font-semibold",
+              )}
+            />
+          ) : (
+            <span className="text-content-primary font-semibold">
+              {drug.dose}
+            </span>
+          )}
+          <span className="text-content-muted">{drug.unit}</span>
+        </div>
+
+        <span className="text-content-muted font-bold">횟수</span>
+        <div className="flex items-baseline gap-1">
+          {editable ? (
+            <input
+              value={drug.frequency}
+              onChange={(e) => onChange({ frequency: e.target.value })}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                valueInputBase,
+                "w-12 text-content-primary font-semibold",
+              )}
+            />
+          ) : (
+            <span className="text-content-primary font-semibold">
+              {drug.frequency}
+            </span>
+          )}
+          <span className="text-content-muted">회</span>
+        </div>
+
+        <span className="text-content-muted font-bold">용법</span>
+        <div className="flex items-baseline gap-1">
+          {editable ? (
+            <input
+              value={drug.method}
+              onChange={(e) => onChange({ method: e.target.value })}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                valueInputBase,
+                "w-20 text-content-primary font-semibold",
+              )}
+            />
+          ) : (
+            <span className="text-content-primary font-semibold">
+              {drug.method}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Mock Medical Dictionary for Quick Edit
 const MEDICAL_SUGGESTIONS: Record<string, string[]> = {
   충우염: ["충수염"],
@@ -495,13 +617,14 @@ export function EMRGrid() {
     [key: number]: HTMLDivElement | null;
   }>({});
 
-  // Global Edit mode state
-  const [isGlobalEditing, setIsGlobalEditing] = useState(false);
-  const [editRecords, setEditRecords] = useState<
-    typeof INITIAL_RECORDS
-  >([]);
+  // Per-row inline edit state
   const [editingRecordId, setEditingRecordId] = useState<
     number | null
+  >(null);
+  // Global edit session (enables per-row edit/confirm buttons)
+  const [isGlobalEditing, setIsGlobalEditing] = useState(false);
+  const [recordsSnapshot, setRecordsSnapshot] = useState<
+    typeof INITIAL_RECORDS | null
   >(null);
 
   const [patientInfo, setPatientInfo] = useState(
@@ -542,32 +665,21 @@ export function EMRGrid() {
   };
 
   const startGlobalEdit = () => {
-    setEditRecords(JSON.parse(JSON.stringify(records)));
+    setRecordsSnapshot(JSON.parse(JSON.stringify(records)));
     setIsGlobalEditing(true);
   };
 
-  const cancelGlobalEdit = () => {
-    setIsGlobalEditing(false);
-    setEditRecords([]);
-  };
-
   const saveGlobalEdit = () => {
-    setRecords(
-      editRecords
-        .map((r) => ({ ...r, isConfirmed: true }))
-        .sort((a, b) => a.time.localeCompare(b.time)),
-    );
     setIsGlobalEditing(false);
-    setEditRecords([]);
+    setRecordsSnapshot(null);
+    setEditingRecordId(null);
   };
 
-  const handleUpdateEditRecord = (
-    id: number,
-    updates: Partial<(typeof INITIAL_RECORDS)[0]>,
-  ) => {
-    setEditRecords((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...updates } : r)),
-    );
+  const cancelGlobalEdit = () => {
+    if (recordsSnapshot) setRecords(recordsSnapshot);
+    setIsGlobalEditing(false);
+    setRecordsSnapshot(null);
+    setEditingRecordId(null);
   };
 
   const handleConfirmRecord = (id: number) => {
@@ -580,13 +692,8 @@ export function EMRGrid() {
 
   const handleDeleteRecord = (id: number) => {
     if (window.confirm("이 기록을 삭제하시겠습니까?")) {
-      if (isGlobalEditing) {
-        setEditRecords((prev) =>
-          prev.filter((r) => r.id !== id),
-        );
-      } else {
-        setRecords((prev) => prev.filter((r) => r.id !== id));
-      }
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+      if (editingRecordId === id) setEditingRecordId(null);
     }
   };
 
@@ -686,9 +793,7 @@ export function EMRGrid() {
     return true;
   };
 
-  const filteredRecords = isGlobalEditing
-    ? editRecords.filter(recordPasses)
-    : records.filter(recordPasses);
+  const filteredRecords = records.filter(recordPasses);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[var(--color-surface-base)]">
@@ -806,29 +911,33 @@ export function EMRGrid() {
             {/* Global Edit Controls */}
             {isGlobalEditing ? (
               <div className="flex items-center gap-1.5">
-                <button
+                <Button
+                  variant="brand"
+                  size="sm"
+                  className="h-8 px-3 rounded text-[12px]"
                   onClick={saveGlobalEdit}
-                  className="flex items-center px-3 py-1 text-body-sm font-bold text-white bg-[var(--color-brand-primary)] shadow-sm rounded hover:bg-[var(--color-brand-hover)] transition-all active:scale-95 whitespace-nowrap"
                 >
                   저장
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="brandOutline"
+                  size="sm"
+                  className="h-8 px-3 rounded text-[12px]"
                   onClick={cancelGlobalEdit}
-                  className="flex items-center px-3 py-1 text-body-sm font-bold text-[var(--color-content-primary)] bg-[var(--color-surface-card)] border border-[var(--color-border-base)] shadow-sm rounded hover:bg-[var(--color-surface-hover)] transition-all active:scale-95 whitespace-nowrap"
                 >
                   취소
-                </button>
+                </Button>
               </div>
             ) : (
-              <button
+              <Button
+                variant="brandOutline"
+                size="sm"
+                className="h-8 px-3 rounded gap-1.5 text-[12px]"
                 onClick={startGlobalEdit}
-                className="flex items-center gap-2 px-3 py-2 bg-[var(--color-surface-card)] border border-[var(--color-border-base)] rounded-md hover:bg-[var(--color-surface-hover)] transition-all active:scale-95 whitespace-nowrap"
               >
-                <Edit2 className="w-4 h-4 text-[var(--color-brand-primary)]" />
-                <span className="text-body-sm font-bold text-[var(--color-content-primary)]">
-                  수정
-                </span>
-              </button>
+                <Edit2 className="w-3.5 h-3.5" />
+                전체 수정
+              </Button>
             )}
           </div>
         </div>
@@ -973,7 +1082,7 @@ export function EMRGrid() {
             >
               <div className="min-w-[800px] flex flex-col h-full">
                 {/* Header Row - Solid & Slim */}
-                <div className="grid grid-cols-[80px_1fr_110px_120px] gap-4 px-4 py-1.5 bg-[var(--color-surface-hover)] border-b border-[var(--color-border-base)] text-body-sm font-extrabold text-[var(--color-content-secondary)] sticky top-0 z-20 tracking-tight shadow-sm">
+                <div className="grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-1.5 bg-[var(--color-surface-hover)] border-b border-[var(--color-border-base)] text-body-sm font-extrabold text-[var(--color-content-secondary)] sticky top-0 z-20 tracking-tight shadow-sm">
                   <div className="border-r border-[var(--color-border-base)] pr-4 text-center">
                     시간
                   </div>
@@ -990,7 +1099,7 @@ export function EMRGrid() {
                 <div className="flex flex-col flex-1 pb-10">
                   {filteredRecords.map((record, index) => {
                     const isMine = record.writer === currentUser;
-                    const isEditingRow = (isGlobalEditing || editingRecordId === record.id) && isMine;
+                    const isEditingRow = editingRecordId === record.id && isMine && isGlobalEditing;
 
                     return (
                       <React.Fragment key={record.id}>
@@ -1010,7 +1119,7 @@ export function EMRGrid() {
                       </div>
 
                       {inlineAddIndex === index && (
-                        <div className="grid grid-cols-[80px_1fr_110px_120px] gap-4 px-4 py-2 border-y border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-surface)]/30 items-center shadow-inner">
+                        <div className="grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-2 border-y border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-surface)]/30 items-center shadow-inner">
                           {/* Time Column */}
                           <div className="flex justify-center border-r border-brand-primary/10 pr-4">
                             <TimePicker
@@ -1069,7 +1178,7 @@ export function EMRGrid() {
                           (recordRefs.current[record.id] = el)
                         }
                         className={cn(
-                          "grid grid-cols-[80px_1fr_110px_120px] gap-4 px-4 py-1 border-b border-[var(--color-border-base)]/50 items-start hover:bg-[var(--color-surface-hover)]/40 transition-all group relative",
+                          "grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-1 border-b border-[var(--color-border-base)]/50 items-start hover:bg-[var(--color-surface-hover)]/40 transition-all group relative",
                           isEditingRow &&
                             "bg-[var(--color-brand-surface)]/20 hover:bg-[var(--color-brand-surface)]/20 shadow-inner",
                           !record.isConfirmed &&
@@ -1079,8 +1188,8 @@ export function EMRGrid() {
                           // 퀵 수정 팝오버 내부에서 발생한 클릭은 편집 모드 전환 차단
                           if ((e.target as HTMLElement).closest("[data-quick-edit-popover]")) return;
                           if (
+                            isGlobalEditing &&
                             !record.isConfirmed &&
-                            !isGlobalEditing &&
                             record.writer === currentUser
                           ) {
                             setEditingRecordId(record.id);
@@ -1092,17 +1201,11 @@ export function EMRGrid() {
                           {isEditingRow ? (
                             <TimePicker
                               value={record.time}
-                              onSelect={(newTime) => {
-                                if (isGlobalEditing)
-                                  handleUpdateEditRecord(
-                                    record.id,
-                                    { time: newTime },
-                                  );
-                                else
-                                  handleUpdateRecord(record.id, {
-                                    time: newTime,
-                                  });
-                              }}
+                              onSelect={(newTime) =>
+                                handleUpdateRecord(record.id, {
+                                  time: newTime,
+                                })
+                              }
                               className="w-full border-transparent bg-surface-base/50 shadow-none px-1 h-7 hover:bg-white hover:border-border-subtle transition-all"
                             />
                           ) : (
@@ -1113,39 +1216,20 @@ export function EMRGrid() {
                         </div>
 
                         {/* Content Column */}
-                        <div className="min-w-0 pr-6 border-r border-[var(--color-border-base)]/50 py-1.5 relative group/content">
-                          {/* Handover Toggle Checkmark — 본인 기록만 토글 가능 */}
-                          {isMine && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const targetId = record.id;
-                                const currentVal = isGlobalEditing
-                                  ? editRecords.find(r => r.id === targetId)?.isHandover
-                                  : record.isHandover;
-
-                                if (isGlobalEditing) {
-                                  handleUpdateEditRecord(targetId, { isHandover: !currentVal });
-                                } else {
-                                  handleUpdateRecord(targetId, { isHandover: !currentVal });
-                                }
+                        <div className="min-w-0 pr-6 border-r border-[var(--color-border-base)]/50 py-1.5 relative">
+                          {(record as { source?: string }).source === "nfc" &&
+                          (record as { drug?: DrugInfo }).drug ? (
+                            <NfcDrugContent
+                              drug={(record as { drug?: DrugInfo }).drug as DrugInfo}
+                              editable={isEditingRow && !record.isConfirmed}
+                              onChange={(patch) => {
+                                const current = (record as { drug?: DrugInfo }).drug;
+                                if (!current) return;
+                                const newDrug = { ...current, ...patch };
+                                handleUpdateRecord(record.id, { drug: newDrug } as Partial<(typeof INITIAL_RECORDS)[0]>);
                               }}
-                              className={cn(
-                                "absolute top-1 right-1 p-0.5 rounded transition-all z-30 cursor-pointer",
-                                (isGlobalEditing ? editRecords.find(r => r.id === record.id)?.isHandover : record.isHandover)
-                                  ? "text-green-600 bg-green-50/80 opacity-100"
-                                  : "text-content-muted/30 hover:text-content-muted/60 hover:bg-surface-hover opacity-0 group-hover/content:opacity-100"
-                              )}
-                              title="인수인계 항목 선택"
-                            >
-                              <Check className={cn(
-                                "size-3.5 stroke-[3px]",
-                                (isGlobalEditing ? editRecords.find(r => r.id === record.id)?.isHandover : record.isHandover) && "animate-in zoom-in-75 duration-200"
-                              )} />
-                            </button>
-                          )}
-                          
-                          {isEditingRow ? (
+                            />
+                          ) : isEditingRow ? (
                             <div className="relative px-1.5 py-1 bg-surface-base/30 rounded focus-within:bg-white focus-within:ring-1 focus-within:ring-brand-primary/20 transition-all">
                               <textarea
                                 autoFocus={
@@ -1157,30 +1241,15 @@ export function EMRGrid() {
                                     el.style.height = `${el.scrollHeight}px`;
                                   }
                                 }}
-                                value={
-                                  isGlobalEditing
-                                    ? editRecords.find(
-                                        (r) => r.id === record.id,
-                                      )?.content
-                                    : record.content
-                                }
+                                value={record.content}
                                 onChange={(e) => {
-                                  if (isGlobalEditing)
-                                    handleUpdateEditRecord(
-                                      record.id,
-                                      { content: e.target.value },
-                                    );
-                                  else
-                                    handleUpdateRecord(
-                                      record.id,
-                                      { content: e.target.value },
-                                    );
+                                  handleUpdateRecord(record.id, {
+                                    content: e.target.value,
+                                  });
                                   e.target.style.height = "auto";
                                   e.target.style.height = `${e.target.scrollHeight}px`;
                                 }}
                                 onBlur={(e) => {
-                                  // 전체 수정 모드에서는 유지, 인라인 편집만 외부 클릭 시 종료
-                                  if (isGlobalEditing) return;
                                   if (editingRecordId !== record.id) return;
                                   const rowEl = recordRefs.current[record.id];
                                   if (rowEl && rowEl.contains(e.relatedTarget as Node)) return;
@@ -1221,35 +1290,57 @@ export function EMRGrid() {
 
                         {/* Actions Column */}
                         <div className="pt-1 h-full flex items-center justify-center gap-1.5">
-                          {!record.isConfirmed && (
+                          {isGlobalEditing && !record.isConfirmed && (
                             isMine ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleConfirmRecord(record.id);
-                                  if (editingRecordId === record.id)
-                                    setEditingRecordId(null);
-                                }}
-                                className="px-4 py-1.5 text-body-sm font-bold text-[var(--color-content-primary)] bg-white border border-[var(--color-border-base)] rounded-md hover:bg-[var(--color-surface-hover)] hover:border-[var(--color-border-hover)] transition-all whitespace-nowrap shadow-sm active:scale-95"
-                              >
-                                확정
-                              </button>
+                              <>
+                                <Button
+                                  variant="brandOutline"
+                                  size="sm"
+                                  className="h-7 px-2.5 rounded text-[12px]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingRecordId(
+                                      editingRecordId === record.id
+                                        ? null
+                                        : record.id,
+                                    );
+                                  }}
+                                >
+                                  {editingRecordId === record.id
+                                    ? "완료"
+                                    : "수정"}
+                                </Button>
+                                <Button
+                                  variant="brand"
+                                  size="sm"
+                                  className="h-7 px-2.5 rounded text-[12px]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleConfirmRecord(record.id);
+                                    if (editingRecordId === record.id)
+                                      setEditingRecordId(null);
+                                  }}
+                                >
+                                  확정
+                                </Button>
+                                {editingRecordId === record.id && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteRecord(record.id);
+                                    }}
+                                    className="p-1 text-content-muted hover:text-[var(--color-destructive)] transition-all rounded hover:bg-[var(--color-destructive)]/10"
+                                    title="삭제"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </>
                             ) : (
                               <div className="px-3 py-1.5 text-[11px] font-bold text-content-muted bg-slate-100 border border-border-subtle rounded-md whitespace-nowrap opacity-70 cursor-not-allowed">
                                 확정 대기
                               </div>
                             )
-                          )}
-                          {isGlobalEditing && record.writer === currentUser && (
-                            <button
-                              onClick={() =>
-                                handleDeleteRecord(record.id)
-                              }
-                              className="p-1.5 text-content-muted hover:text-[var(--color-destructive)] transition-all rounded hover:bg-[var(--color-destructive)]/10"
-                              title="삭제"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
                           )}
                         </div>
                       </div>
@@ -1274,7 +1365,7 @@ export function EMRGrid() {
                   </div>
 
                   {inlineAddIndex === filteredRecords.length && (
-                    <div className="grid grid-cols-[80px_1fr_110px_120px] gap-4 px-4 py-2 border-y border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-surface)]/30 items-center shadow-inner">
+                    <div className="grid grid-cols-[80px_1fr_110px_140px] gap-4 px-4 py-2 border-y border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-surface)]/30 items-center shadow-inner">
                       <div className="flex justify-center border-r border-brand-primary/10 pr-4">
                         <TimePicker
                           value={newRecordTime}
